@@ -1,10 +1,10 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -30,7 +30,7 @@ import (
 
 // 命令行参数
 var (
-	guiMode = flag.Bool("gui", false, "启动GUI配置界面")
+	cliMode = flag.Bool("cli", false, "启动命令行模式")
 )
 
 // 全局变量
@@ -42,14 +42,14 @@ var (
 func main() {
 	flag.Parse()
 
-	// 如果指定了-gui参数，则启动GUI模式
-	if *guiMode {
-		startGUIMode()
+	// 如果指定了-cli参数，则启动命令行模式
+	if *cliMode {
+		startCLIMode()
 		return
 	}
 
-	// 否则启动命令行模式（默认行为）
-	startCLIMode()
+	// 否则启动GUI模式（默认行为）
+	startGUIMode()
 }
 
 // startGUIMode 启动GUI模式
@@ -145,6 +145,16 @@ func (cm *ConfigManager) GetConfig() *config.Config {
 	return cm.config
 }
 
+// TestResult 测试结果结构
+type TestResult struct {
+	Endpoint     string
+	URL          string
+	RequestData  string
+	ResponseData string
+	StatusCode   int
+	Error        error
+}
+
 // GUI 图形用户界面
 type GUI struct {
 	configManager *ConfigManager
@@ -155,6 +165,10 @@ type GUI struct {
 	readTimeoutEntry  *widget.Entry
 	writeTimeoutEntry *widget.Entry
 	idleTimeoutEntry  *widget.Entry
+	// 代理配置控件
+	httpProxyEntry  *widget.Entry
+	httpsProxyEntry *widget.Entry
+	noProxyEntry    *widget.Entry
 
 	// Monica配置控件
 	monicaCookieEntry        *widget.Entry
@@ -244,12 +258,21 @@ func (g *GUI) createMainConfigTab() *container.Scroll {
 		},
 	}
 
+	// 创建proxy状态标签
+	proxyStatus := "未启用代理"
+	if cfg.Proxy.HTTPProxy != "" || cfg.Proxy.HTTPSProxy != "" {
+		proxyStatus = "已启用代理"
+	}
+	proxyStatusLabel := widget.NewLabel("Proxy状态: " + proxyStatus)
+	proxyStatusLabel.TextStyle = fyne.TextStyle{Bold: true}
+
 	// 控制按钮布局
 	buttons := container.NewHBox(g.testButton, g.startButton, g.stopButton)
 
 	content := container.NewVBox(
 		form,
 		widget.NewSeparator(),
+		proxyStatusLabel,
 		buttons,
 		widget.NewSeparator(),
 		g.statusLabel,
@@ -293,6 +316,10 @@ func (g *GUI) createServerTab() *container.Scroll {
 	g.readTimeoutEntry = widget.NewEntry()
 	g.writeTimeoutEntry = widget.NewEntry()
 	g.idleTimeoutEntry = widget.NewEntry()
+	// 初始化代理控件
+	g.httpProxyEntry = widget.NewEntry()
+	g.httpsProxyEntry = widget.NewEntry()
+	g.noProxyEntry = widget.NewEntry()
 
 	// 设置默认值
 	cfg := g.configManager.GetConfig()
@@ -301,6 +328,10 @@ func (g *GUI) createServerTab() *container.Scroll {
 	g.readTimeoutEntry.SetText(cfg.Server.ReadTimeout.String())
 	g.writeTimeoutEntry.SetText(cfg.Server.WriteTimeout.String())
 	g.idleTimeoutEntry.SetText(cfg.Server.IdleTimeout.String())
+	// 设置代理默认值
+	g.httpProxyEntry.SetText(cfg.Proxy.HTTPProxy)
+	g.httpsProxyEntry.SetText(cfg.Proxy.HTTPSProxy)
+	g.noProxyEntry.SetText(cfg.Proxy.NoProxy)
 
 	// 创建布局
 	form := &widget.Form{
@@ -310,6 +341,9 @@ func (g *GUI) createServerTab() *container.Scroll {
 			{Text: "读取超时", Widget: g.readTimeoutEntry, HintText: "读取请求的超时时间"},
 			{Text: "写入超时", Widget: g.writeTimeoutEntry, HintText: "写入响应的超时时间"},
 			{Text: "空闲超时", Widget: g.idleTimeoutEntry, HintText: "连接空闲超时时间"},
+			{Text: "HTTP代理", Widget: g.httpProxyEntry, HintText: "HTTP代理地址（例如：http://proxy.example.com:8080）"},
+			{Text: "HTTPS代理", Widget: g.httpsProxyEntry, HintText: "HTTPS代理地址（例如：https://proxy.example.com:8080）"},
+			{Text: "不使用代理", Widget: g.noProxyEntry, HintText: "不使用代理的域名列表（逗号分隔）"},
 		},
 	}
 
@@ -493,20 +527,98 @@ func (g *GUI) onStartService() {
 		g.statusLabel.SetText("服务启动中...")
 
 		if err := serverApp.Start(); err != nil {
+			// 启动失败，在主线程中更新UI
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title:   "Monica Proxy",
+				Content: fmt.Sprintf("服务启动失败: %v", err),
+			})
+			// 直接更新UI（在goroutine中）
 			g.statusLabel.SetText(fmt.Sprintf("服务启动失败: %v", err))
 			g.startButton.Enable()
+			g.stopButton.Disable()
 			return
 		}
 
-		// 更新UI（需要在主线程中执行）
+		// 启动成功，在主线程中更新UI
 		fyne.CurrentApp().SendNotification(&fyne.Notification{
 			Title:   "Monica Proxy",
 			Content: "服务已启动",
 		})
+		// 直接更新UI（在goroutine中）
+		g.statusLabel.SetText("服务已启动")
+		g.stopButton.Enable()
 	}()
+}
 
-	g.stopButton.Enable()
-	g.statusLabel.SetText("服务已启动")
+// showDetailedTestResults 显示详细的测试结果
+func (g *GUI) showDetailedTestResults(testResults []TestResult) {
+	// 在主线程中更新UI
+	fyne.CurrentApp().SendNotification(&fyne.Notification{
+		Title:   "测试完成",
+		Content: "配置测试已完成，请查看详细结果",
+	})
+
+	// 创建详细结果窗口
+	resultWindow := fyne.CurrentApp().NewWindow("详细测试结果")
+	resultWindow.Resize(fyne.NewSize(800, 600))
+
+	// 创建可折叠的内容区域
+	var contentItems []fyne.CanvasObject
+
+	for _, result := range testResults {
+		// 创建状态标签
+		var statusText string
+		if result.Error != nil {
+			statusText = fmt.Sprintf("❌ 失败: %v", result.Error)
+		} else if result.StatusCode >= 200 && result.StatusCode < 300 {
+			statusText = fmt.Sprintf("✅ 成功 (HTTP %d)", result.StatusCode)
+		} else if result.StatusCode == 401 {
+			statusText = fmt.Sprintf("❌ API Key错误 (HTTP %d)", result.StatusCode)
+		} else if result.StatusCode == 403 {
+			statusText = fmt.Sprintf("❌ 访问被拒绝 (HTTP %d)", result.StatusCode)
+		} else {
+			statusText = fmt.Sprintf("❌ 错误 (HTTP %d)", result.StatusCode)
+		}
+
+		// 创建详细信息卡片（默认折叠）
+		details := container.NewVBox()
+		
+		// URL
+		details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**请求URL:**\n```\n%s\n```", result.URL)))
+		
+		// 请求数据
+		if result.RequestData != "" {
+			details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**请求数据:**\n```json\n%s\n```", result.RequestData)))
+		}
+		
+		// 响应数据
+		if result.Error == nil {
+			responseData := result.ResponseData
+			if len(responseData) > 1000 {
+				responseData = responseData[:1000] + "\n... (响应数据过长，已截断)"
+			}
+			details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**响应数据:**\n```json\n%s\n```", responseData)))
+		}
+		
+		// 创建可折叠容器
+		accordion := widget.NewAccordion(
+			widget.NewAccordionItem(result.Endpoint+" - "+statusText, details),
+		)
+		contentItems = append(contentItems, accordion)
+	}
+
+	// 创建滚动容器
+	scrollContainer := container.NewScroll(container.NewVBox(contentItems...))
+	
+	// 创建关闭按钮
+	closeButton := widget.NewButton("关闭", func() {
+		resultWindow.Close()
+	})
+	
+	// 创建主容器
+	mainContainer := container.NewBorder(nil, container.NewHBox(closeButton), nil, nil, scrollContainer)
+	resultWindow.SetContent(mainContainer)
+	resultWindow.Show()
 }
 
 // onStopService 停止服务事件处理
@@ -517,9 +629,16 @@ func (g *GUI) onStopService() {
 	// 在后台goroutine中停止服务
 	go func() {
 		serverMu.Lock()
-		if serverApp != nil {
-			// 注意：echo框架没有提供Stop方法，我们需要使用其他方式停止
-			// 这里我们只是更新状态
+		if serverApp != nil && serverApp.server != nil {
+			// 使用Echo框架的Shutdown方法来优雅地停止服务器
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			
+			if err := serverApp.server.Shutdown(ctx); err != nil {
+				// 如果优雅关闭失败，强制关闭
+				serverApp.server.Close()
+			}
+			
 			serverApp = nil
 		}
 		serverMu.Unlock()
@@ -545,6 +664,11 @@ func (g *GUI) updateConfigFromUI() {
 		cfg.Server.Port = port
 	}
 	// 注意：在实际实现中，需要解析时间字符串为time.Duration
+
+	// 更新代理配置
+	cfg.Proxy.HTTPProxy = g.httpProxyEntry.Text
+	cfg.Proxy.HTTPSProxy = g.httpsProxyEntry.Text
+	cfg.Proxy.NoProxy = g.noProxyEntry.Text
 
 	// 更新Monica配置
 	cfg.Monica.Cookie = g.monicaCookieEntry.Text
@@ -654,6 +778,7 @@ func (g *GUI) onTestConfig() {
 			SetHeaders(map[string]string{
 				"Authorization": "Bearer " + cfg.Security.BearerToken,
 				"User-Agent":    "Monica-Proxy-GUI/1.0",
+				"Content-Type":  "application/json",
 			})
 		
 		// 如果有Cookie，也添加到请求头
@@ -661,35 +786,88 @@ func (g *GUI) onTestConfig() {
 			client.SetHeader("Cookie", cfg.Monica.Cookie)
 		}
 		
-		// 测试API端点 - 获取模型列表
-		resp, err := client.R().Get(fmt.Sprintf("http://%s:%d/v1/models", cfg.Server.Host, cfg.Server.Port))
+		// 注意：测试客户端不应使用代理来连接本地服务器
+		// 代理设置仅用于代理服务器转发请求到Monica API时使用
+		// 确保测试客户端不使用任何代理设置
+		client.SetProxy("")
 		
-		// 更新UI需要在主线程中执行
-		fyne.CurrentApp().SendNotification(&fyne.Notification{
-			Title: "配置测试",
-		})
+		// 测试结果收集
+		var testResults []TestResult
+		// 对于测试，使用localhost而不是0.0.0.0，因为0.0.0.0在测试时无法连接
+		testHost := cfg.Server.Host
+		if testHost == "0.0.0.0" {
+			testHost = "localhost"
+		}
+		baseURL := fmt.Sprintf("http://%s:%d", testHost, cfg.Server.Port)
+		
+		// 测试1: 获取模型列表
+		resp1, err1 := client.R().Get(baseURL + "/v1/models")
+		result1 := TestResult{
+			Endpoint:   "/v1/models",
+			URL:        baseURL + "/v1/models",
+			RequestData: "",
+		}
+		if err1 != nil {
+			result1.Error = err1
+		} else {
+			result1.StatusCode = resp1.StatusCode()
+			result1.ResponseData = resp1.String()
+		}
+		testResults = append(testResults, result1)
+		
+		// 测试2: 聊天对话接口
+		chatData := `{
+  "model": "gpt-4o",
+  "messages": [
+    {
+      "role": "system",
+      "content": "You are a helpful assistant."
+    },
+    {
+      "role": "user",
+      "content": "Hello"
+    }
+  ],
+  "stream": false
+}`
+		resp2, err2 := client.R().SetBody(chatData).Post(baseURL + "/v1/chat/completions")
+		result2 := TestResult{
+			Endpoint:    "/v1/chat/completions",
+			URL:         baseURL + "/v1/chat/completions",
+			RequestData: chatData,
+		}
+		if err2 != nil {
+			result2.Error = err2
+		} else {
+			result2.StatusCode = resp2.StatusCode()
+			result2.ResponseData = resp2.String()
+		}
+		testResults = append(testResults, result2)
+		
+		// 测试3: 图片生成接口
+		imageData := `{
+  "prompt": "a white siamese cat",
+  "n": 1,
+  "size": "512x512"
+}`
+		resp3, err3 := client.R().SetBody(imageData).Post(baseURL + "/v1/images/generations")
+		result3 := TestResult{
+			Endpoint:    "/v1/images/generations",
+			URL:         baseURL + "/v1/images/generations",
+			RequestData: imageData,
+		}
+		if err3 != nil {
+			result3.Error = err3
+		} else {
+			result3.StatusCode = resp3.StatusCode()
+			result3.ResponseData = resp3.String()
+		}
+		testResults = append(testResults, result3)
 		
 		// 更新UI
 		g.testButton.Enable()
 		
-		if err != nil {
-			g.statusLabel.SetText(fmt.Sprintf("测试失败: %v", err))
-			dialog.ShowError(fmt.Errorf("测试失败: %v", err), fyne.CurrentApp().Driver().AllWindows()[0])
-			return
-		}
-		
-		if resp.StatusCode() == http.StatusOK {
-			g.statusLabel.SetText("配置测试成功!")
-			dialog.ShowInformation("测试成功", "配置验证通过，可以正常启动服务", fyne.CurrentApp().Driver().AllWindows()[0])
-		} else if resp.StatusCode() == http.StatusUnauthorized {
-			g.statusLabel.SetText("API Key错误")
-			dialog.ShowError(fmt.Errorf("API Key验证失败，请检查API Key是否正确"), fyne.CurrentApp().Driver().AllWindows()[0])
-		} else if resp.StatusCode() == http.StatusForbidden {
-			g.statusLabel.SetText("访问被拒绝")
-			dialog.ShowError(fmt.Errorf("访问被拒绝，请检查Cookie和API Key是否正确"), fyne.CurrentApp().Driver().AllWindows()[0])
-		} else {
-			g.statusLabel.SetText(fmt.Sprintf("测试失败: HTTP %d", resp.StatusCode()))
-			dialog.ShowError(fmt.Errorf("测试失败: HTTP %d\n响应: %s", resp.StatusCode(), resp.String()), fyne.CurrentApp().Driver().AllWindows()[0])
-		}
+		// 显示详细测试结果
+		g.showDetailedTestResults(testResults)
 	}()
 }

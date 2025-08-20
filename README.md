@@ -13,19 +13,55 @@
 </div>
 
 ## 项目来源
-本项目基于 https://github.com/ycvk/monica-proxy 项目进行二开，感谢原作者。
+本项目基于 [https://github.com/ycvk/monica-proxy](https://github.com/ycvk/monica-proxy) 项目进行二次开发。
+
+### 原项目许可证
+原项目采用 MIT 许可证，其许可证内容如下：
+
+```
+MIT License
+
+Copyright (c) 2024 Monica Proxy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### 本项目许可证
+本项目同样采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+### 致谢
+感谢原作者 [ycvk](https://github.com/ycvk) 创建了优秀的 Monica Proxy 项目，为本项目提供了坚实的基础。
 ---
 
 ## 🚀 **快速开始**
 
-### GUI模式启动
+### 启动方式
 
 ```bash
 # 编译
 go build -o monica-proxy main.go
 
-# 启动GUI配置界面
-./monica-proxy -gui
+# 默认启动GUI配置界面
+./monica-proxy
+
+# 启动命令行模式
+./monica-proxy -cli
 ```
 
 ### 测试API
@@ -60,17 +96,17 @@ go build -o monica-proxy main.go
 export MONICA_COOKIE="your_cookie"
 export BEARER_TOKEN="your_token"
 # export BOT_UID="your_bot_uid"  # 可选，用于Custom Bot模式
-./monica-proxy
+./monica-proxy -cli
 
-# 或者启动GUI配置界面
-./monica-proxy -gui
+# 或者启动GUI配置界面（默认）
+./monica-proxy
 ```
 
 ## ⚙️ **配置参考**
 
 ### 🖥️ **GUI配置界面**
 
-Monica Proxy 现在支持图形用户界面配置。通过 `-gui` 参数启动GUI模式，可以方便地配置所有环境变量：
+Monica Proxy 现在支持图形用户界面配置。程序默认启动GUI模式，可以方便地配置所有环境变量：
 
 - **必填项**：Monica Cookie、Bearer Token（带有*标记）
 - **选填项**：其他所有配置项都可以通过GUI界面进行配置
@@ -83,12 +119,12 @@ Monica Proxy 现在支持图形用户界面配置。通过 `-gui` 参数启动GU
 # 方法1：使用Makefile
 make run-gui
 
-# 方法2：直接运行
-./monica-proxy -gui
+# 方法2：直接运行（默认启动GUI）
+./monica-proxy
 
 # 方法3：编译后运行
 go build -o monica-proxy main.go
-./monica-proxy -gui
+./monica-proxy
 ```
 
 #### GUI界面说明
@@ -101,11 +137,21 @@ go build -o monica-proxy main.go
 
 #### 使用步骤
 
-1. 启动GUI界面
+1. 启动程序（默认启动GUI界面）
 2. 在相应字段中输入配置信息（必填项带有*标记）
 3. 点击"保存配置"按钮将配置保存到config.yaml文件
 4. 点击"启动服务"按钮启动HTTP服务
 5. 使用"停止服务"按钮可以停止正在运行的服务
+
+### 命令行模式
+
+如果需要以命令行模式运行，可以使用 `-cli` 参数：
+
+```bash
+./monica-proxy -cli
+```
+
+命令行模式下，程序会直接读取配置文件和环境变量启动HTTP服务，不显示GUI界面。
 
 ## 🔌 **API使用**
 

@@ -30,6 +30,9 @@ type Config struct {
 
 	// 日志配置
 	Logging LoggingConfig `yaml:"logging" json:"logging"`
+
+	// 代理配置
+	Proxy ProxyConfig `yaml:"proxy" json:"proxy"`
 }
 
 // ServerConfig 服务器配置
@@ -75,6 +78,13 @@ type LoggingConfig struct {
 	Output           string `yaml:"output" json:"output"`
 	EnableRequestLog bool   `yaml:"enable_request_log" json:"enable_request_log"`
 	MaskSensitive    bool   `yaml:"mask_sensitive" json:"mask_sensitive"`
+}
+
+// ProxyConfig 代理配置
+type ProxyConfig struct {
+	HTTPProxy  string `yaml:"http_proxy" json:"http_proxy"`
+	HTTPSProxy string `yaml:"https_proxy" json:"https_proxy"`
+	NoProxy    string `yaml:"no_proxy" json:"no_proxy"`
 }
 
 // Load 加载配置，优先级：配置文件 > 环境变量 > 默认值
@@ -138,6 +148,11 @@ func GetDefaultConfig() *Config {
 			Output:           "stdout",
 			EnableRequestLog: true,
 			MaskSensitive:    true,
+		},
+		Proxy: ProxyConfig{
+			HTTPProxy:  "",
+			HTTPSProxy: "",
+			NoProxy:    "",
 		},
 	}
 }
@@ -258,6 +273,17 @@ func overrideWithEnv(config *Config) {
 	}
 	if format := os.Getenv("LOG_FORMAT"); format != "" {
 		config.Logging.Format = format
+	}
+	
+	// 代理配置
+	if httpProxy := os.Getenv("HTTP_PROXY"); httpProxy != "" {
+		config.Proxy.HTTPProxy = httpProxy
+	}
+	if httpsProxy := os.Getenv("HTTPS_PROXY"); httpsProxy != "" {
+		config.Proxy.HTTPSProxy = httpsProxy
+	}
+	if noProxy := os.Getenv("NO_PROXY"); noProxy != "" {
+		config.Proxy.NoProxy = noProxy
 	}
 }
 

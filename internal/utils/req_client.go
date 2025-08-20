@@ -6,6 +6,7 @@ import (
 	"monica-proxy/internal/config"
 	"net"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -40,6 +41,18 @@ func createSSEClient(cfg *config.Config) *resty.Client {
 			InsecureSkipVerify: cfg.Security.TLSSkipVerify,
 			MinVersion:         tls.VersionTLS12, // 强制使用TLS 1.2+
 		},
+		Proxy: http.ProxyFromEnvironment, // 使用环境变量中的代理设置
+	}
+	
+	// 如果配置中有代理设置，则使用配置的代理
+	if cfg.Proxy.HTTPProxy != "" || cfg.Proxy.HTTPSProxy != "" {
+		proxyURL := cfg.Proxy.HTTPProxy
+		if proxyURL == "" {
+			proxyURL = cfg.Proxy.HTTPSProxy
+		}
+		if parsedProxyURL, err := url.Parse(proxyURL); err == nil {
+			transport.Proxy = http.ProxyURL(parsedProxyURL)
+		}
 	}
 
 	client := resty.NewWithClient(&http.Client{
@@ -90,6 +103,18 @@ func createDefaultClient(cfg *config.Config) *resty.Client {
 			InsecureSkipVerify: cfg.Security.TLSSkipVerify,
 			MinVersion:         tls.VersionTLS12, // 强制使用TLS 1.2+
 		},
+		Proxy: http.ProxyFromEnvironment, // 使用环境变量中的代理设置
+	}
+	
+	// 如果配置中有代理设置，则使用配置的代理
+	if cfg.Proxy.HTTPProxy != "" || cfg.Proxy.HTTPSProxy != "" {
+		proxyURL := cfg.Proxy.HTTPProxy
+		if proxyURL == "" {
+			proxyURL = cfg.Proxy.HTTPSProxy
+		}
+		if parsedProxyURL, err := url.Parse(proxyURL); err == nil {
+			transport.Proxy = http.ProxyURL(parsedProxyURL)
+		}
 	}
 
 	client := resty.NewWithClient(&http.Client{
