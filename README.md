@@ -1,53 +1,22 @@
-# Monica Proxy
-
-<div align="center">
-
-![Go](https://img.shields.io/badge/go-1.24-00ADD8)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Docker](https://img.shields.io/badge/docker-ready-2496ED)
+# Monica Proxy GUI1
 
 **Monica AI 代理服务**
 
-将 Monica AI 转换为 ChatGPT 兼容的 API，支持完整的 OpenAI 接口兼容性，提供GUI界面配置。
+将 Monica AI 转换为 ChatGPT 兼容的 API，支持完整的 OpenAI 接口兼容性，提供GUI界面进行整体管理。
 
-</div>
 
 ## 项目来源
 本项目基于 [https://github.com/ycvk/monica-proxy](https://github.com/ycvk/monica-proxy) 项目进行二次开发。
 
-### 原项目许可证
-原项目采用 MIT 许可证，其许可证内容如下：
+## ✨ **功能特性**
 
-```
-MIT License
+### 🔗 **API兼容性**
 
-Copyright (c) 2024 Monica Proxy
+- ✅ **完整的System Prompt支持** - 通过Custom Bot Mode实现真正的系统提示词
+- ✅ **ChatGPT API完全兼容** - 无缝替换OpenAI接口，支持所有标准参数
+- ✅ **流式响应** - 完整的SSE流式对话体验，支持实时输出
+- ✅ **Monica模型支持** - GPT-4o、Claude-4、Gemini等主流模型完整映射
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
-### 本项目许可证
-本项目同样采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
-
-### 致谢
-感谢原作者 [ycvk](https://github.com/ycvk) 创建了优秀的 Monica Proxy 项目，为本项目提供了坚实的基础。
----
 
 ## 🚀 **快速开始**
 
@@ -71,14 +40,6 @@ curl -H "Authorization: Bearer your_bearer_token" \
      http://localhost:8080/v1/models
 ```
 
-## ✨ **功能特性**
-
-### 🔗 **API兼容性**
-
-- ✅ **完整的System Prompt支持** - 通过Custom Bot Mode实现真正的系统提示词
-- ✅ **ChatGPT API完全兼容** - 无缝替换OpenAI接口，支持所有标准参数
-- ✅ **流式响应** - 完整的SSE流式对话体验，支持实时输出
-- ✅ **Monica模型支持** - GPT-4o、Claude-4、Gemini等主流模型完整映射
 
 ## 🏗️ **部署指南**
 
@@ -86,8 +47,8 @@ curl -H "Authorization: Bearer your_bearer_token" \
 
 ```bash
 # 克隆项目
-git clone https://github.com/ycvk/monica-proxy.git
-cd monica-proxy
+git clone https://github.com/SimonUTD/monica-proxy-gui
+cd monica-proxy-gui
 
 # 编译
 go build -o monica-proxy main.go
@@ -223,16 +184,6 @@ curl -X POST http://localhost:8080/v1/chat/completions \
   }'
 ```
 
-**优势：**
-
-- 无需修改客户端代码，保持完全兼容
-- 所有请求都可以动态设置不同的 prompt
-- 支持流式和非流式响应
-
-
-## 📄 **许可证**
-
-本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
 
 ---
 
@@ -241,3 +192,41 @@ curl -X POST http://localhost:8080/v1/chat/completions \
 **如果这个项目对你有帮助，请给个 ⭐️ Star！**
 
 </div>
+
+## 📄 **许可证**
+
+本项目采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情
+
+
+### 原项目许可证
+原项目采用 MIT 许可证，其许可证内容如下：
+
+```
+MIT License
+
+Copyright (c) 2024 Monica Proxy
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+### 本项目许可证
+本项目同样采用 MIT 许可证 - 查看 [LICENSE](LICENSE) 文件了解详情。
+
+### 致谢
+感谢原作者 [ycvk](https://github.com/ycvk) 创建了优秀的 Monica Proxy 项目，为本项目提供了坚实的基础。
