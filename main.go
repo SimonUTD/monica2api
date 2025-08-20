@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"sync"
@@ -84,7 +85,7 @@ func startCLIMode() {
 func startGUI() {
 	// 创建Fyne应用
 	myApp := app.New()
-	myWindow := myApp.NewWindow("Monica Proxy 配置")
+	myWindow := myApp.NewWindow("Monica Proxy GUI - 基于界面的Monica（Web）转换成 API 的工具")
 	myWindow.Resize(fyne.NewSize(1200, 800))
 
 	// 创建配置管理器
@@ -355,12 +356,14 @@ func (g *GUI) CreateMainContainer() *container.AppTabs {
 	mainConfigTab := g.createMainConfigTab()
 	serverTab := g.createServerTab()
 	loggingTab := g.createLoggingTab()
+	copyrightTab := g.createCopyrightTab()
 
 	// 创建标签页容器
 	tabs := container.NewAppTabs(
 		container.NewTabItem("主要配置", mainConfigTab),
 		container.NewTabItem("服务器配置", serverTab),
 		container.NewTabItem("日志配置", loggingTab),
+		container.NewTabItem("版权信息", copyrightTab),
 	)
 
 	tabs.SetTabLocation(container.TabLocationTop)
@@ -471,6 +474,61 @@ func (g *GUI) createLoggingTab() *container.Scroll {
 	content := container.NewVBox(
 		form,
 		logPathGroup,
+	)
+
+	return container.NewScroll(content)
+}
+
+// createCopyrightTab 创建版权信息标签页
+func (g *GUI) createCopyrightTab() *container.Scroll {
+	// 创建版权信息内容
+	title := widget.NewLabel("版权信息")
+	title.TextStyle = fyne.TextStyle{Bold: true}
+	title.Alignment = fyne.TextAlignCenter
+
+	// MIT License文本
+	mitLicense := widget.NewLabel("MIT License")
+	mitLicense.TextStyle = fyne.TextStyle{Bold: true}
+
+	mitText := widget.NewLabel("版权所有 (c) 2024 本项目贡献者\n\n" +
+		"特此免费授予任何获得本软件副本及相关文档文件（以下简称\"软件\"）的人不受限制地处理软件的权利，包括但不限于使用、复制、修改、合并、发布、分发、再许可和/或销售软件副本的权利，并允许获得软件的人这样做，但须符合以下条件：\n\n" +
+		"上述版权声明和本许可声明应包含在软件的所有副本或实质性部分中。\n\n" +
+		"本软件按\"原样\"提供，不提供任何明示或暗示的保证，包括但不限于适销性、特定用途适用性和非侵权性的保证。在任何情况下，作者或版权持有人均不对因软件或软件的使用或其他交易而产生的任何索赔、损害或其他责任承担责任，无论是在合同、侵权还是其他方面。")
+	mitText.Wrapping = fyne.TextWrapWord
+
+	// 原始项目信息
+	originalProject := widget.NewLabel("原始项目")
+	originalProject.TextStyle = fyne.TextStyle{Bold: true}
+
+	originalProjectInfo := widget.NewLabel("本项目是基于 https://github.com/ycvk/monica-proxy 项目进行的二次开发。\n\n" +
+		"原始项目作者：ycvk\n" +
+		"原始项目许可证：MIT License\n\n" +
+		"感谢原作者 ycvk 的杰出贡献，本项目在原项目基础上进行了功能扩展和界面优化。")
+	originalProjectInfo.Wrapping = fyne.TextWrapWord
+
+	// 外部链接按钮
+	linkButton := widget.NewButton("访问原始项目", func() {
+		// 在默认浏览器中打开原始项目链接
+		projectURL, err := url.Parse("https://github.com/ycvk/monica-proxy")
+		if err != nil {
+			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
+			return
+		}
+		if err := fyne.CurrentApp().OpenURL(projectURL); err != nil {
+			dialog.ShowError(err, fyne.CurrentApp().Driver().AllWindows()[0])
+		}
+	})
+
+	// 创建内容布局
+	content := container.NewVBox(
+		title,
+		widget.NewSeparator(),
+		mitLicense,
+		mitText,
+		widget.NewSeparator(),
+		originalProject,
+		originalProjectInfo,
+		linkButton,
 	)
 
 	return container.NewScroll(content)
