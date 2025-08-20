@@ -2,6 +2,7 @@ package utils
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"monica-proxy/internal/config"
 	"net"
@@ -143,4 +144,92 @@ func createDefaultClient(cfg *config.Config) *resty.Client {
 	})
 
 	return client
+}
+
+// MonicaQuotaResponse Monica额度查询响应结构
+type MonicaQuotaResponse struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		ModuleQuotas []struct {
+			Module  string `json:"module"`
+			Quotas  []struct {
+				Scene          string `json:"scene"`
+				ResetFrequency string `json:"reset_frequency"`
+				DefaultQuota   int    `json:"default_quota"`
+				CurrentQuota   int    `json:"current_quota"`
+				LastResetTime  string `json:"last_reset_time"`
+			} `json:"quotas"`
+		} `json:"module_quotas"`
+	} `json:"data"`
+}
+
+// GetMonicaQuota 获取Monica额度信息
+func GetMonicaQuota(cfg *config.Config) (*MonicaQuotaResponse, error) {
+	// 创建专用的HTTP客户端
+	client := resty.New().
+		SetTimeout(30 * time.Second).
+		SetHeaders(map[string]string{
+			"accept":           "*/*",
+			"accept-language":  "zh-CN,zh;q=0.9,en;q=0.8",
+			"cache-control":    "no-cache",
+			"content-type":     "application/json",
+			"origin":           "https://monica.im",
+			"pragma":           "no-cache",
+			"priority":         "u=1, i",
+			"referer":          "https://monica.im/",
+			"sec-fetch-dest":   "empty",
+			"sec-fetch-mode":   "cors",
+			"sec-fetch-site":   "same-site",
+			"user-agent":       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+			"x-client-id":      "3ff5e948-10e9-4a32-8626-f8560b238a42",
+			"x-client-locale":  "zh_CN",
+			"x-client-type":    "web",
+			"x-client-version": "5.4.3",
+			"x-from-channel":   "NA",
+			"x-product-name":   "Monica",
+			"x-time-zone":      "Asia/Shanghai;-480",
+			"dnt":              "1",
+		})
+
+	// 设置代理
+	if cfg.Proxy.HTTPProxy != "" || cfg.Proxy.HTTPSProxy != "" {
+		proxyURL := cfg.Proxy.HTTPProxy
+		if proxyURL == "" {
+			proxyURL = cfg.Proxy.HTTPSProxy
+		}
+		client.SetProxy(proxyURL)
+	}
+
+	// 设置Cookie
+	if cfg.Monica.Cookie != "" {
+		client.SetHeader("Cookie", cfg.Monica.Cookie)
+	}
+
+	// 准备请求数据
+	requestData := map[string]interface{}{
+		"modules": []string{"genius_bot", "credits"},
+	}
+
+	// 发送请求
+	resp, err := client.R().SetBody(requestData).Post("https://api.monica.im/api/usagev2/get_quotas")
+	if err != nil {
+		return nil, fmt.Errorf("请求失败: %w", err)
+	}
+
+	if resp.StatusCode() != 200 {
+		return nil, fmt.Errorf("HTTP错误: %d", resp.StatusCode())
+	}
+
+	// 解析响应
+	var quotaResp MonicaQuotaResponse
+	if err := json.Unmarshal(resp.Body(), &quotaResp); err != nil {
+		return nil, fmt.Errorf("响应解析失败: %w", err)
+	}
+
+	if quotaResp.Code != 0 {
+		return nil, fmt.Errorf("API错误: %s", quotaResp.Msg)
+	}
+
+	return &quotaResp, nil
 }

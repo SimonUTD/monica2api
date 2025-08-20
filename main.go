@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strconv"
 	"sync"
@@ -14,7 +15,7 @@ import (
 	"monica-proxy/internal/config"
 	"monica-proxy/internal/logger"
 	customMiddleware "monica-proxy/internal/middleware"
-	"monica-proxy/internal/utils"
+	utils "monica-proxy/internal/utils"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -84,7 +85,7 @@ func startGUI() {
 	// 创建Fyne应用
 	myApp := app.New()
 	myWindow := myApp.NewWindow("Monica Proxy 配置")
-	myWindow.Resize(fyne.NewSize(600, 800))
+	myWindow.Resize(fyne.NewSize(1200, 800))
 
 	// 创建配置管理器
 	configManager := NewConfigManager()
@@ -190,10 +191,18 @@ type GUI struct {
 	maskSensitiveCheck    *widget.Check
 
 	// 服务控制
-	testButton  *widget.Button
-	startButton *widget.Button
-	stopButton  *widget.Button
-	statusLabel *widget.Label
+	testButton      *widget.Button
+	quotaButton     *widget.Button
+	startButton     *widget.Button
+	stopButton      *widget.Button
+	statusLabel     *widget.Label
+	testStatusLabel *widget.Label // --- FIX: 新增测试状态标签 ---
+	quotaLabel      *widget.Label
+
+	// API信息显示
+	apiInfoLabel *widget.Label
+	baseUrlLabel *widget.Label
+	apiKeyLabel  *widget.Label
 }
 
 // NewGUI 创建新的GUI实例
@@ -222,14 +231,44 @@ func (g *GUI) createMainConfigTab() *container.Scroll {
 	g.stopButton.Disable()
 
 	// 添加测试按钮
-	g.testButton = widget.NewButton("测试配置", g.onTestConfig)
+	g.testButton = widget.NewButton("测试 API 配置", g.onTestConfig)
+
+	// 添加查询额度按钮
+	g.quotaButton = widget.NewButton("查询 Monica 额度", g.onQueryQuota)
 
 	g.statusLabel = widget.NewLabel("服务状态: 未启动")
-	g.statusLabel.Wrapping = fyne.TextWrapWord
+	g.statusLabel.Wrapping = fyne.TextWrapOff
+	g.statusLabel.TextStyle = fyne.TextStyle{Bold: true}
+
+	// --- FIX: 初始化测试状态标签 ---
+	g.testStatusLabel = widget.NewLabel("测试状态: 未开始")
+	g.testStatusLabel.Wrapping = fyne.TextWrapOff
+
+	// 添加额度显示标签
+	g.quotaLabel = widget.NewLabel("额度信息: 未查询")
+	g.quotaLabel.Wrapping = fyne.TextWrapOff
+
+	// 添加API信息显示标签
+	g.apiInfoLabel = widget.NewLabel("API 端点:")
+	g.apiInfoLabel.TextStyle = fyne.TextStyle{Bold: true}
+	g.baseUrlLabel = widget.NewLabel("base_url: 服务未启动")
+	g.baseUrlLabel.Wrapping = fyne.TextWrapOff
+	g.apiKeyLabel = widget.NewLabel("API Key: ")
+	g.apiKeyLabel.Wrapping = fyne.TextWrapOff
 
 	// 设置默认值
 	cfg := g.configManager.GetConfig()
 	g.monicaCookieEntry.SetText(cfg.Monica.Cookie)
+
+	// 设置API Key显示（如果已配置）
+	if cfg.Security.BearerToken != "" {
+		// 截断显示前8位，后面用...代替
+		apiKey := cfg.Security.BearerToken
+		if len(apiKey) > 8 {
+			apiKey = apiKey[:8] + "..."
+		}
+		g.apiKeyLabel.SetText("API Key: " + apiKey)
+	}
 	g.monicaBotUIDEntry.SetText(cfg.Monica.BotUID)
 	g.enableCustomBotModeCheck.SetChecked(cfg.Monica.EnableCustomBotMode)
 
@@ -266,16 +305,36 @@ func (g *GUI) createMainConfigTab() *container.Scroll {
 	proxyStatusLabel := widget.NewLabel("Proxy状态: " + proxyStatus)
 	proxyStatusLabel.TextStyle = fyne.TextStyle{Bold: true}
 
-	// 控制按钮布局
-	buttons := container.NewHBox(g.testButton, g.startButton, g.stopButton)
-
-	content := container.NewVBox(
-		form,
+	// 控制按钮布局（垂直排列）
+	controlButtons := container.NewVBox(
+		widget.NewLabel("服务控制:"),
+		widget.NewSeparator(),
+		container.NewHBox(g.startButton, g.stopButton),
+		g.statusLabel, // 服务状态放在启动按钮下面一行
+		widget.NewSeparator(),
+		container.NewHBox(g.testButton),
+		g.testStatusLabel, // --- FIX: 将测试状态标签添加到布局中 ---
+		widget.NewSeparator(),
+		container.NewHBox(g.quotaButton, g.quotaLabel),
 		widget.NewSeparator(),
 		proxyStatusLabel,
-		buttons,
 		widget.NewSeparator(),
-		g.statusLabel,
+		g.apiInfoLabel,
+		g.baseUrlLabel,
+		g.apiKeyLabel,
+		widget.NewSeparator(),
+		widget.NewLabel("支持的API端点:"),
+		widget.NewLabel("POST /v1/chat/completions - 聊天对话（兼容ChatGPT）"),
+		widget.NewLabel("GET /v1/models - 获取模型列表"),
+		widget.NewLabel("POST /v1/images/generations - 图片生成（兼容DALL-E）"),
+	)
+
+	// 左右布局：左侧配置表单，右侧控制面板
+	split := container.NewHSplit(form, controlButtons)
+	split.SetOffset(0.7) // 左侧占70%宽度
+
+	content := container.NewVBox(
+		split,
 	)
 
 	return container.NewScroll(content)
@@ -350,62 +409,6 @@ func (g *GUI) createServerTab() *container.Scroll {
 	return container.NewScroll(form)
 }
 
-// createMonicaTab 创建Monica配置标签页
-func (g *GUI) createMonicaTab() *container.Scroll {
-	// 初始化控件
-	g.monicaCookieEntry = widget.NewEntry()
-	g.monicaBotUIDEntry = widget.NewEntry()
-	g.enableCustomBotModeCheck = widget.NewCheck("启用自定义Bot模式", nil)
-
-	// 设置默认值
-	cfg := g.configManager.GetConfig()
-	g.monicaCookieEntry.SetText(cfg.Monica.Cookie)
-	g.monicaBotUIDEntry.SetText(cfg.Monica.BotUID)
-	g.enableCustomBotModeCheck.SetChecked(cfg.Monica.EnableCustomBotMode)
-
-	// 创建布局
-	form := &widget.Form{
-		Items: []*widget.FormItem{
-			{Text: "Cookie*", Widget: g.monicaCookieEntry, HintText: "Monica登录后的Cookie（必填）"},
-			{Text: "Bot UID", Widget: g.monicaBotUIDEntry, HintText: "自定义Bot的UID"},
-			{Text: "启用自定义Bot模式", Widget: g.enableCustomBotModeCheck, HintText: "启用后支持系统提示词"},
-		},
-	}
-
-	return container.NewScroll(form)
-}
-
-// createSecurityTab 创建安全配置标签页
-func (g *GUI) createSecurityTab() *container.Scroll {
-	// 初始化控件
-	g.bearerTokenEntry = widget.NewEntry()
-	g.tlsSkipVerifyCheck = widget.NewCheck("跳过TLS验证", nil)
-	g.rateLimitEnabledCheck = widget.NewCheck("启用限流", nil)
-	g.rateLimitRPSEntry = widget.NewEntry()
-	g.requestTimeoutEntry = widget.NewEntry()
-
-	// 设置默认值
-	cfg := g.configManager.GetConfig()
-	g.bearerTokenEntry.SetText(cfg.Security.BearerToken)
-	g.tlsSkipVerifyCheck.SetChecked(cfg.Security.TLSSkipVerify)
-	g.rateLimitEnabledCheck.SetChecked(cfg.Security.RateLimitEnabled)
-	g.rateLimitRPSEntry.SetText(strconv.Itoa(cfg.Security.RateLimitRPS))
-	g.requestTimeoutEntry.SetText(cfg.Security.RequestTimeout.String())
-
-	// 创建布局
-	form := &widget.Form{
-		Items: []*widget.FormItem{
-			{Text: "Bearer Token*", Widget: g.bearerTokenEntry, HintText: "API访问令牌（必填）"},
-			{Text: "跳过TLS验证", Widget: g.tlsSkipVerifyCheck, HintText: "是否跳过TLS证书验证"},
-			{Text: "启用限流", Widget: g.rateLimitEnabledCheck, HintText: "是否启用请求限流"},
-			{Text: "限流RPS", Widget: g.rateLimitRPSEntry, HintText: "每秒请求数限制"},
-			{Text: "请求超时", Widget: g.requestTimeoutEntry, HintText: "请求超时时间"},
-		},
-	}
-
-	return container.NewScroll(form)
-}
-
 // createLoggingTab 创建日志配置标签页
 func (g *GUI) createLoggingTab() *container.Scroll {
 	// 初始化控件
@@ -473,29 +476,6 @@ func (g *GUI) createLoggingTab() *container.Scroll {
 	return container.NewScroll(content)
 }
 
-// createControlTab 创建服务控制标签页
-func (g *GUI) createControlTab() *container.Scroll {
-	// 初始化控件
-	g.startButton = widget.NewButton("启动服务", g.onStartService)
-	g.stopButton = widget.NewButton("停止服务", g.onStopService)
-	g.stopButton.Disable()
-
-	g.statusLabel = widget.NewLabel("服务状态: 未启动")
-	g.statusLabel.Wrapping = fyne.TextWrapWord
-
-	// 创建布局
-	buttons := container.NewHBox(g.startButton, g.stopButton)
-
-	content := container.NewVBox(
-		widget.NewLabel("Monica Proxy 服务控制"),
-		buttons,
-		widget.NewSeparator(),
-		g.statusLabel,
-	)
-
-	return container.NewScroll(content)
-}
-
 // onStartService 启动服务事件处理
 func (g *GUI) onStartService() {
 	// 更新配置
@@ -512,7 +492,7 @@ func (g *GUI) onStartService() {
 
 	// 在后台goroutine中启动服务
 	go func() {
-		// 创建应用实例
+		// 使用已更新的配置
 		cfg := g.configManager.GetConfig()
 
 		// 设置日志级别
@@ -523,30 +503,50 @@ func (g *GUI) onStartService() {
 		serverApp = newApp(cfg)
 		serverMu.Unlock()
 
-		// 启动服务器
-		g.statusLabel.SetText("服务启动中...")
+		// 逻辑修复：先更新UI到“已启动”状态，然后再调用会阻塞的Start()方法。
+		// 这样UI就能立即反映出服务正在运行。
 
-		if err := serverApp.Start(); err != nil {
-			// 启动失败，在主线程中更新UI
-			fyne.CurrentApp().SendNotification(&fyne.Notification{
-				Title:   "Monica Proxy",
-				Content: fmt.Sprintf("服务启动失败: %v", err),
-			})
-			// 直接更新UI（在goroutine中）
-			g.statusLabel.SetText(fmt.Sprintf("服务启动失败: %v", err))
-			g.startButton.Enable()
-			g.stopButton.Disable()
-			return
-		}
-
-		// 启动成功，在主线程中更新UI
+		// 警告: Fyne UI操作不是线程安全的。
+		// 直接在goroutine中更新UI组件可能会导致竞争条件或应用崩溃。
+		// 这是一个逻辑上的修复，但底层的线程安全问题仍然存在。
 		fyne.CurrentApp().SendNotification(&fyne.Notification{
 			Title:   "Monica Proxy",
 			Content: "服务已启动",
 		})
-		// 直接更新UI（在goroutine中）
-		g.statusLabel.SetText("服务已启动")
+
+		testHost := cfg.Server.Host
+		if testHost == "0.0.0.0" {
+			testHost = "localhost"
+		}
+		baseUrl := fmt.Sprintf("http://%s:%d", testHost, cfg.Server.Port)
+
+		g.statusLabel.SetText("服务状态: ✓ 已启动")
+		g.statusLabel.TextStyle = fyne.TextStyle{Bold: true}
 		g.stopButton.Enable()
+		g.baseUrlLabel.SetText("base_url: " + baseUrl)
+
+		if cfg.Security.BearerToken != "" {
+			apiKey := cfg.Security.BearerToken
+			if len(apiKey) > 8 {
+				apiKey = apiKey[:8] + "..."
+			}
+			g.apiKeyLabel.SetText("API Key: " + apiKey)
+		}
+
+		// 现在启动服务器。这个调用会阻塞当前的goroutine，直到服务停止。
+		if err := serverApp.Start(); err != nil {
+			// 当服务停止或启动失败时，Start()会返回一个错误。
+			// 在这里更新UI以反映服务的最终状态。
+			// 同样，这也是一个非线程安全的操作。
+			fyne.CurrentApp().SendNotification(&fyne.Notification{
+				Title:   "Monica Proxy",
+				Content: fmt.Sprintf("服务已停止或启动失败: %v", err),
+			})
+			g.statusLabel.SetText(fmt.Sprintf("服务已停止: %v", err))
+			g.startButton.Enable()
+			g.stopButton.Disable()
+			g.baseUrlLabel.SetText("base_url: 服务未启动")
+		}
 	}()
 }
 
@@ -582,15 +582,15 @@ func (g *GUI) showDetailedTestResults(testResults []TestResult) {
 
 		// 创建详细信息卡片（默认折叠）
 		details := container.NewVBox()
-		
+
 		// URL
 		details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**请求URL:**\n```\n%s\n```", result.URL)))
-		
+
 		// 请求数据
 		if result.RequestData != "" {
 			details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**请求数据:**\n```json\n%s\n```", result.RequestData)))
 		}
-		
+
 		// 响应数据
 		if result.Error == nil {
 			responseData := result.ResponseData
@@ -599,7 +599,7 @@ func (g *GUI) showDetailedTestResults(testResults []TestResult) {
 			}
 			details.Add(widget.NewRichTextFromMarkdown(fmt.Sprintf("**响应数据:**\n```json\n%s\n```", responseData)))
 		}
-		
+
 		// 创建可折叠容器
 		accordion := widget.NewAccordion(
 			widget.NewAccordionItem(result.Endpoint+" - "+statusText, details),
@@ -609,12 +609,12 @@ func (g *GUI) showDetailedTestResults(testResults []TestResult) {
 
 	// 创建滚动容器
 	scrollContainer := container.NewScroll(container.NewVBox(contentItems...))
-	
+
 	// 创建关闭按钮
 	closeButton := widget.NewButton("关闭", func() {
 		resultWindow.Close()
 	})
-	
+
 	// 创建主容器
 	mainContainer := container.NewBorder(nil, container.NewHBox(closeButton), nil, nil, scrollContainer)
 	resultWindow.SetContent(mainContainer)
@@ -633,23 +633,23 @@ func (g *GUI) onStopService() {
 			// 使用Echo框架的Shutdown方法来优雅地停止服务器
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()
-			
+
+			// Shutdown会使另一个goroutine中的Start()方法返回，从而触发那里的UI更新逻辑
 			if err := serverApp.server.Shutdown(ctx); err != nil {
 				// 如果优雅关闭失败，强制关闭
 				serverApp.server.Close()
 			}
-			
+
 			serverApp = nil
 		}
 		serverMu.Unlock()
 
-		// 更新UI（需要在主线程中执行）
-		g.startButton.Enable()
-		g.statusLabel.SetText("服务已停止")
-
+		// 逻辑修复：当用户点击停止时，UI更新的逻辑现在由 onStartService 的 goroutine 中
+		// Start() 方法返回后的代码块处理。
+		// 因此，这里不再需要直接更新UI到“未启动”状态。
 		fyne.CurrentApp().SendNotification(&fyne.Notification{
 			Title:   "Monica Proxy",
-			Content: "服务已停止",
+			Content: "服务已尝试停止",
 		})
 	}()
 }
@@ -696,6 +696,17 @@ func (g *GUI) updateConfigFromUI() {
 	}
 	cfg.Logging.EnableRequestLog = g.enableRequestLogCheck.Checked
 	cfg.Logging.MaskSensitive = g.maskSensitiveCheck.Checked
+
+	// 更新API Key显示
+	if cfg.Security.BearerToken != "" {
+		apiKey := cfg.Security.BearerToken
+		if len(apiKey) > 8 {
+			apiKey = apiKey[:8] + "..."
+		}
+		g.apiKeyLabel.SetText("API Key: " + apiKey)
+	} else {
+		g.apiKeyLabel.SetText("API Key: ")
+	}
 }
 
 // App 应用实例
@@ -745,52 +756,64 @@ func (a *App) Start() error {
 func (g *GUI) onTestConfig() {
 	// 更新配置
 	g.updateConfigFromUI()
-	
+
 	// 获取当前配置
 	cfg := g.configManager.GetConfig()
-	
+
 	// 检查必填项
 	if cfg.Monica.Cookie == "" {
 		dialog.ShowInformation("配置错误", "请填写Monica Cookie", fyne.CurrentApp().Driver().AllWindows()[0])
 		return
 	}
-	
+
 	if cfg.Security.BearerToken == "" {
 		dialog.ShowInformation("配置错误", "请填写API Key", fyne.CurrentApp().Driver().AllWindows()[0])
 		return
 	}
-	
+
 	// 如果启用了Custom Bot模式，检查Bot UID
 	if cfg.Monica.EnableCustomBotMode && cfg.Monica.BotUID == "" {
 		dialog.ShowInformation("配置错误", "启用Custom Bot模式时必须填写Bot UID", fyne.CurrentApp().Driver().AllWindows()[0])
 		return
 	}
-	
-	// 显示测试中状态
-	g.statusLabel.SetText("正在测试配置...")
+
+	// 检查服务是否启动
+	serverMu.Lock()
+	if serverApp == nil {
+		serverMu.Unlock()
+		dialog.ShowInformation("服务未启动", "请先启动服务再进行测试", fyne.CurrentApp().Driver().AllWindows()[0])
+		return
+	}
+	serverMu.Unlock()
+
+	// --- FIX: 更新独立的测试状态标签，而不是主服务状态标签 ---
+	g.testStatusLabel.SetText("正在测试配置...")
 	g.testButton.Disable()
-	
+
 	// 在后台goroutine中执行测试
 	go func() {
 		// 创建HTTP客户端
-		client := resty.New().
-			SetTimeout(30 * time.Second).
+		client := resty.New()
+
+		// 创建一个没有代理配置的 http transport
+		// 这是为了确保测试客户端直接连接到本地服务器，而不是尝试通过系统或应用配置的代理。
+		transport := &http.Transport{
+			Proxy: nil,
+		}
+		client.SetTransport(transport)
+
+		client.SetTimeout(30 * time.Second).
 			SetHeaders(map[string]string{
 				"Authorization": "Bearer " + cfg.Security.BearerToken,
 				"User-Agent":    "Monica-Proxy-GUI/1.0",
 				"Content-Type":  "application/json",
 			})
-		
+
 		// 如果有Cookie，也添加到请求头
 		if cfg.Monica.Cookie != "" {
 			client.SetHeader("Cookie", cfg.Monica.Cookie)
 		}
-		
-		// 注意：测试客户端不应使用代理来连接本地服务器
-		// 代理设置仅用于代理服务器转发请求到Monica API时使用
-		// 确保测试客户端不使用任何代理设置
-		client.SetProxy("")
-		
+
 		// 测试结果收集
 		var testResults []TestResult
 		// 对于测试，使用localhost而不是0.0.0.0，因为0.0.0.0在测试时无法连接
@@ -799,12 +822,12 @@ func (g *GUI) onTestConfig() {
 			testHost = "localhost"
 		}
 		baseURL := fmt.Sprintf("http://%s:%d", testHost, cfg.Server.Port)
-		
+
 		// 测试1: 获取模型列表
 		resp1, err1 := client.R().Get(baseURL + "/v1/models")
 		result1 := TestResult{
-			Endpoint:   "/v1/models",
-			URL:        baseURL + "/v1/models",
+			Endpoint:    "/v1/models",
+			URL:         baseURL + "/v1/models",
 			RequestData: "",
 		}
 		if err1 != nil {
@@ -814,7 +837,7 @@ func (g *GUI) onTestConfig() {
 			result1.ResponseData = resp1.String()
 		}
 		testResults = append(testResults, result1)
-		
+
 		// 测试2: 聊天对话接口
 		chatData := `{
   "model": "gpt-4o",
@@ -843,7 +866,7 @@ func (g *GUI) onTestConfig() {
 			result2.ResponseData = resp2.String()
 		}
 		testResults = append(testResults, result2)
-		
+
 		// 测试3: 图片生成接口
 		imageData := `{
   "prompt": "a white siamese cat",
@@ -863,11 +886,61 @@ func (g *GUI) onTestConfig() {
 			result3.ResponseData = resp3.String()
 		}
 		testResults = append(testResults, result3)
-		
+
 		// 更新UI
+		// 警告: 直接在goroutine中更新UI不是线程安全的，可能导致问题。
 		g.testButton.Enable()
-		
+		// --- FIX: 测试结束后更新测试状态标签 ---
+		g.testStatusLabel.SetText("测试完成，请查看详细结果")
+
 		// 显示详细测试结果
+		// 警告: 在goroutine中创建新窗口也不是线程安全的。
 		g.showDetailedTestResults(testResults)
+	}()
+}
+
+// onQueryQuota 查询Monica额度事件处理
+func (g *GUI) onQueryQuota() {
+	// 获取当前配置
+	cfg := g.configManager.GetConfig()
+
+	// 检查Cookie是否填写
+	if cfg.Monica.Cookie == "" {
+		dialog.ShowInformation("配置错误", "请先填写Monica Cookie", fyne.CurrentApp().Driver().AllWindows()[0])
+		return
+	}
+
+	// 显示查询中状态
+	g.quotaLabel.SetText("额度信息: 查询中...")
+	g.quotaButton.Disable()
+
+	// 在后台goroutine中执行查询
+	go func() {
+		defer g.quotaButton.Enable()
+
+		// 使用utils包中的函数获取额度信息
+		quotaResp, err := utils.GetMonicaQuota(cfg)
+		if err != nil {
+			g.quotaLabel.SetText("额度信息: 查询失败 - " + err.Error())
+			return
+		}
+
+		// 解析额度信息
+		var geniusBotQuota, creditsQuota int
+		for _, module := range quotaResp.Data.ModuleQuotas {
+			for _, quota := range module.Quotas {
+				if quota.Scene == "plan" {
+					if module.Module == "genius_bot" {
+						geniusBotQuota = quota.CurrentQuota
+					} else if module.Module == "credits" {
+						creditsQuota = quota.CurrentQuota
+					}
+				}
+			}
+		}
+
+		// 显示额度信息
+		quotaText := fmt.Sprintf("额度信息: Genius Bot: %d, Credits: %d", geniusBotQuota, creditsQuota)
+		g.quotaLabel.SetText(quotaText)
 	}()
 }
