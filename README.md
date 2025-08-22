@@ -1,4 +1,4 @@
-# Monica Proxy GUI1
+# Monica To API (GUI)
 
 **Monica AI 代理服务**
 
