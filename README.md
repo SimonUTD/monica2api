@@ -108,12 +108,14 @@ curl -H "Authorization: Bearer your_bearer_token" \
 
 #### Fyne版本编译
 
+需要将fyne版本文件恢复
+
 ```bash
 # 克隆项目
 git clone https://github.com/SimonUTD/monica-proxy-gui
 cd monica-proxy-gui
 
-# 编译Fyne版本
+# 编译
 go build -o monica-proxy-fyne main.go
 
 # 命令行模式运行
@@ -126,7 +128,7 @@ export BEARER_TOKEN="your_token"
 ./monica-proxy-fyne
 ```
 
-#### Wails版本编译
+#### Wails版本编译(当前)
 
 ```bash
 # 克隆项目
