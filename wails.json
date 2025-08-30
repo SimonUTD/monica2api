@@ -1,0 +1,63 @@
+{
+  "name": "monica-proxy-wails",
+  "outputfilename": "monica-proxy-wails",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "wailsjsdir": "./frontend/wailsjs",
+  "version": "2",
+  "modules": {
+    "github.com/wailsapp/wails/v2": "v2.9.1",
+    "github.com/wailsapp/wails/v2/pkg/options/mac": "v2.9.1",
+    "github.com/wailsapp/wails/v2/pkg/options/windows": "v2.9.1"
+  },
+  "obfuscated": false,
+  "garbleargs": "",
+  "author": {
+    "name": "Monica Proxy Contributors",
+    "email": "opensource@example.com"
+  },
+  "info": {
+    "companyName": "Monica Proxy Project",
+    "productName": "Monica Proxy",
+    "productVersion": "1.0.0",
+    "copyright": "Copyright © 2024 Monica Proxy Project Contributors",
+    "comments": "基于界面的Monica（Web）转换成 API 的工具"
+  },
+  "nsisType": "multiple",
+  "filename": "monica-proxy-wails",
+  "garbleignore": "",
+  "args": {
+    "windows": {
+      "webview2RuntimePath": ""
+    },
+    "mac": {
+      "build": {
+        "architectures": [
+          "universal"
+        ]
+      }
+    },
+    "linux": {
+      "build": {
+        "architectures": [
+          "amd64",
+          "arm64"
+        ]
+      }
+    }
+  },
+  "build": {
+    "compiler": "gc",
+    "ldflags": "",
+    "mode": "production",
+    "trimpath": false,
+    "race": false,
+    "upx": true,
+    "webview2": {
+      "global": false,
+      "embedded": true,
+      "embeddedPath": ""
+    }
+  }
+}

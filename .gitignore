@@ -38,3 +38,4 @@ go.work.sum
 monica-proxy
 .claude/
 config.yaml
+frontend/node_modules/

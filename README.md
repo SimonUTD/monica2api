@@ -1,4 +1,4 @@
-# Monica Proxy GUI1
+# Monica Proxy - 多GUI版本
 
 **Monica AI 代理服务**
 
@@ -24,17 +24,69 @@
 
 ## 🚀 **快速开始**
 
-### 启动方式
+本项目提供两种GUI版本，您可以选择适合的版本使用：
+
+### 版本对比
+
+| 特性 | Fyne版本 (原版) | Wails版本 (新版) |
+|------|----------------|-----------------|
+| GUI框架 | Fyne v2 | Wails v2 + Vue.js + Element Plus |
+| 界面风格 | 原生桌面应用风格 | Web风格，更现代化 |
+| 技术栈 | Go + Fyne | Go + Vue.js + Element Plus |
+| 可执行文件大小 | 较小 (~15MB) | 较大 (~50MB) |
+| 界面响应速度 | 快 | 适中 |
+| 界面定制性 | 中等 | 高 (Web技术) |
+| 开发难度 | 简单 | 中等 |
+
+### 🖥️ **Fyne版本 (原版)**
+
+传统的原生GUI应用，使用Fyne框架构建，界面简洁高效。
 
 ```bash
-# 编译
-go build -o monica-proxy main.go
+# 编译Fyne版本
+go build -o monica-proxy-fyne main.go
 
-# 默认启动GUI配置界面
-./monica-proxy
+# 启动Fyne GUI
+./monica-proxy-fyne
 
 # 启动命令行模式
-./monica-proxy -cli
+./monica-proxy-fyne -cli
+```
+
+### 🌐 **Wails版本 (新版)**
+
+现代化的Web风格GUI应用，使用Wails v2 + Vue.js + Element Plus构建，界面更美观，功能更丰富。
+
+#### 前置要求
+- Go 1.18+
+- Node.js 16+ 
+- npm 或 yarn
+
+#### 构建Wails版本
+
+```bash
+# 方法1：使用自动化脚本 (推荐)
+./build-wails.sh
+
+# 方法2：手动构建
+cd frontend
+npm install
+cd ..
+wails build
+```
+
+#### 启动Wails版本
+
+```bash
+# 构建后的可执行文件
+./build/bin/monica-proxy-wails
+```
+
+#### 开发模式运行
+
+```bash
+# 启动开发模式 (前端热重载)
+wails dev
 ```
 
 ### 测试API
@@ -54,29 +106,52 @@ curl -H "Authorization: Bearer your_bearer_token" \
 
 ### 🔧 **源码编译**
 
+#### Fyne版本编译
+
 ```bash
 # 克隆项目
 git clone https://github.com/SimonUTD/monica-proxy-gui
 cd monica-proxy-gui
 
-# 编译
-go build -o monica-proxy main.go
+# 编译Fyne版本
+go build -o monica-proxy-fyne main.go
 
 # 命令行模式运行
 export MONICA_COOKIE="your_cookie"
 export BEARER_TOKEN="your_token"
 # export BOT_UID="your_bot_uid"  # 可选，用于Custom Bot模式
-./monica-proxy -cli
+./monica-proxy-fyne -cli
 
 # 或者启动GUI配置界面（默认）
-./monica-proxy
+./monica-proxy-fyne
+```
+
+#### Wails版本编译
+
+```bash
+# 克隆项目
+git clone https://github.com/SimonUTD/monica-proxy-gui
+cd monica-proxy-gui
+
+# 安装Wails CLI
+go install github.com/wailsapp/wails/v2/cmd/wails@latest
+
+# 使用自动化脚本构建 (推荐)
+./build-wails.sh
+
+# 或者手动构建
+cd frontend && npm install && cd ..
+wails build
+
+# 运行Wails版本
+./build/bin/monica-proxy-wails
 ```
 
 ## ⚙️ **配置参考**
 
 ### 🖥️ **GUI配置界面**
 
-Monica Proxy 现在支持图形用户界面配置。程序默认启动GUI模式，可以方便地配置所有环境变量：
+Monica Proxy 现在支持两种GUI版本，均支持图形用户界面配置，可以方便地配置所有环境变量：
 
 - **必填项**：Monica Cookie、Bearer Token（带有*标记）
 - **选填项**：其他所有配置项都可以通过GUI界面进行配置
@@ -85,25 +160,42 @@ Monica Proxy 现在支持图形用户界面配置。程序默认启动GUI模式�
 
 #### 启动GUI模式
 
+##### Fyne版本启动
+
 ```bash
-# 方法1：使用Makefile
-make run-gui
+# 方法1：直接运行Fyne版本
+./monica-proxy-fyne
 
-# 方法2：直接运行（默认启动GUI）
-./monica-proxy
+# 方法2：编译后运行Fyne版本
+go build -o monica-proxy-fyne main.go
+./monica-proxy-fyne
+```
 
-# 方法3：编译后运行
-go build -o monica-proxy main.go
-./monica-proxy
+##### Wails版本启动
+
+```bash
+# 方法1：运行Wails版本
+./build/bin/monica-proxy-wails
+
+# 方法2：开发模式运行Wails版本
+wails dev
 ```
 
 #### GUI界面说明
 
-1. **服务器配置**：配置HTTP服务器的主机地址、端口和超时时间
-2. **Monica配置**：输入Monica Cookie和Bot UID（启用Custom Bot模式时必需）
-3. **安全配置**：设置Bearer Token、TLS验证选项和限流配置
-4. **日志配置**：配置日志级别、格式和输出方式
-5. **服务控制**：启动/停止HTTP服务
+两个版本的GUI界面都提供以下功能：
+
+1. **主要配置**：Monica配置、安全配置、服务控制
+2. **服务器配置**：HTTP服务器配置、代理设置
+3. **日志配置**：日志级别、格式、输出方式配置
+4. **版权信息**：项目信息和许可证
+
+**界面特性对比：**
+
+- **Fyne版本**：原生桌面界面，简洁高效，启动快速，占用资源少
+- **Wails版本**：现代化Web界面，美观丰富，交互体验好，功能更完整
+
+两个版本的配置文件格式完全兼容，可以共享使用。
 
 #### 使用步骤
 

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Wails Bindings</title>
+</head>
+<body>
+    <h1>Wails Bindings Test</h1>
+    <button onclick="testConfig()">Test GetConfig</button>
+    <button onclick="testService()">Test StartService</button>
+    <div id="result"></div>
+    
+    <script>
+        async function testConfig() {
+            try {
+                console.log('Testing GetConfig...');
+                const result = await window.go.main.WailsApp.GetConfig();
+                console.log('GetConfig result:', result);
+                document.getElementById('result').innerHTML = 'Success: ' + JSON.stringify(result);
+            } catch (error) {
+                console.error('GetConfig error:', error);
+                document.getElementById('result').innerHTML = 'Error: ' + error.message;
+            }
+        }
+        
+        async function testService() {
+            try {
+                console.log('Testing StartService...');
+                const result = await window.go.main.WailsApp.StartService();
+                console.log('StartService result:', result);
+                document.getElementById('result').innerHTML = 'StartService: ' + result;
+            } catch (error) {
+                console.error('StartService error:', error);
+                document.getElementById('result').innerHTML = 'StartService Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
