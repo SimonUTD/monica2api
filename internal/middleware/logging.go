@@ -54,6 +54,15 @@ func RequestLogger(cfg *config.Config) echo.MiddlewareFunc {
 				res.Writer = &responseWriter{ResponseWriter: res.Writer, body: responseBody}
 			}
 
+			// 记录外部请求开始日志 - 环节1: 外部工具调用本软件
+			logger.Info("[环节1] 外部工具调用本软件 - HTTP请求开始",
+				zap.String("method", req.Method),
+				zap.String("uri", req.RequestURI),
+				zap.String("request_id", requestID),
+				zap.Int64("content_length", req.ContentLength),
+				zap.String("content_type", req.Header.Get("Content-Type")),
+			)
+
 			// 处理请求
 			err := next(c)
 
@@ -108,7 +117,7 @@ func RequestLogger(cfg *config.Config) echo.MiddlewareFunc {
 				case res.Status >= 400:
 					logger.Warn("请求完成但客户端错误", fields...)
 				default:
-					logger.Info("请求完成", fields...)
+					logger.Info("[环节4] 本软件返回外部工具 - HTTP请求完成", fields...)
 				}
 			}
 
@@ -145,10 +154,11 @@ func (rw *responseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // isFileUpload 检查是否为文件上传请求
 func isFileUpload(req *http.Request) bool {
+	contentType := req.Header.Get("Content-Type")
 	return req.Method == "POST" && 
-		req.Header.Get("Content-Type") != "" && 
-		(req.Header.Get("Content-Type")[:19] == "multipart/form-data" || 
-			req.Header.Get("Content-Type")[:33] == "application/x-www-form-urlencoded")
+		contentType != "" && 
+		(strings.HasPrefix(contentType, "multipart/form-data") || 
+			strings.HasPrefix(contentType, "application/x-www-form-urlencoded"))
 }
 
 // logHeaders 记录请求头并脱敏敏感信息

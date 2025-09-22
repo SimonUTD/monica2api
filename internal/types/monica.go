@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"monica-proxy/internal/config"
 	"monica-proxy/internal/logger"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -459,6 +460,23 @@ func ChatGPTToMonica(cfg *config.Config, chatReq openai.ChatCompletionRequest) (
 				switch content.Type {
 				case "text":
 					msgContext = content.Text
+					
+					// 检测文本内容中的文件信息
+					if strings.Contains(msgContext, "[file name]:") && strings.Contains(msgContext, "[file content begin]") {
+						// 提取文件名和文件内容
+						fileName, fileContent, found := extractFileFromText(msgContext)
+						if found {
+							attachments = append(attachments, AttachmentRequest{
+								Type:     "document",
+								Data:     fileContent,
+								FileName: fileName,
+								MimeType: "text/markdown",
+							})
+							// 清空文本内容，避免重复
+							msgContext = ""
+						}
+					}
+					
 				case "image_url":
 					// 图片处理 (当前支持)
 					attachments = append(attachments, AttachmentRequest{
@@ -497,18 +515,23 @@ func ChatGPTToMonica(cfg *config.Config, chatReq openai.ChatCompletionRequest) (
 			uploadResults := lop.Map(attachments, func(attachment AttachmentRequest, _ int) *FileInfo {
 				// 确定文件来源类型
 				var source FileUploadSource
+				var fileData interface{}
+				
 				if strings.HasPrefix(attachment.Data, "data:") {
 					source = SourceBase64
+					fileData = attachment.Data
 				} else if strings.HasPrefix(attachment.Data, "http") {
 					source = SourceURL
+					fileData = attachment.Data
 				} else {
-					// 假设是base64编码
-					source = SourceBase64
+					// 对于纯文本内容，使用字节数据
+					source = SourceBytes
+					fileData = []byte(attachment.Data)
 				}
 
 				// 创建上传请求
 				fileReq := &UniversalFileUploadRequest{
-					Data:      attachment.Data,
+					Data:      fileData,
 					Source:    source,
 					FileName:  attachment.FileName,
 					MimeType:  attachment.MimeType,
@@ -756,4 +779,32 @@ func ChatGPTToCustomBot(cfg *config.Config, chatReq openai.ChatCompletionRequest
 	}
 
 	return customBotReq, nil
+}
+
+// extractFileFromText 从文本内容中提取文件信息
+func extractFileFromText(text string) (fileName, fileContent string, found bool) {
+	// 查找文件名
+	fileNamePattern := regexp.MustCompile(`\[file name\]:\s*([^\n]+)`)
+	fileNameMatch := fileNamePattern.FindStringSubmatch(text)
+	if len(fileNameMatch) < 2 {
+		return "", "", false
+	}
+	fileName = strings.TrimSpace(fileNameMatch[1])
+	
+	// 查找文件内容开始和结束标记
+	contentStart := strings.Index(text, "[file content begin]")
+	if contentStart == -1 {
+		return "", "", false
+	}
+	contentStart += len("[file content begin]")
+	
+	contentEnd := strings.Index(text, "[file content end]")
+	if contentEnd == -1 {
+		return "", "", false
+	}
+	
+	// 提取文件内容
+	fileContent = strings.TrimSpace(text[contentStart:contentEnd])
+	
+	return fileName, fileContent, true
 }

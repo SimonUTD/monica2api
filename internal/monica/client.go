@@ -37,7 +37,7 @@ func SendMonicaRequest(ctx context.Context, cfg *config.Config, mReq *types.Moni
 			fields = append(fields, zap.String("request_body", string(requestBody)))
 		}
 
-		logger.Info("发送Monica API请求", fields...)
+		logger.Info("[环节2] 本软件请求Monica - 发送Monica API请求", fields...)
 	}
 
 	// 发起请求
@@ -82,7 +82,7 @@ func SendMonicaRequest(ctx context.Context, cfg *config.Config, mReq *types.Moni
 			case resp.StatusCode() >= 400:
 				logger.Warn("Monica API响应客户端错误", fields...)
 			default:
-				logger.Info("Monica API请求完成", fields...)
+				logger.Info("[环节3] Monica返回本软件 - Monica API请求完成", fields...)
 			}
 		}
 	}

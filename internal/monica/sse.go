@@ -111,7 +111,7 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 			// EOF 和 上下文取消 都是正常结束，不应视为错误
 			if err == io.EOF || errors.Is(err, context.Canceled) {
 				if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
-					logger.Info("SSE流处理完成",
+					logger.Info("[环节3] Monica返回本软件 - SSE流处理完成",
 						zap.String("model", p.model),
 						zap.Int64("chunk_count", chunkCount),
 						zap.Duration("duration", time.Since(startTime)),
@@ -136,6 +136,10 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 			continue
 		}
 
+		// 安全地提取JSON字符串，避免slice bounds越界
+		if len(line) <= dataPrefixLen+1 { // 需要至少 data: + 至少1个字符 + \n
+			continue
+		}
 		jsonStr := line[dataPrefixLen : len(line)-1] // 去掉\n
 		if len(jsonStr) == 0 {
 			continue
@@ -144,7 +148,7 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 		// 如果是 [DONE] 则结束
 		if bytes.Equal(jsonStr, []byte(sseFinish)) {
 			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
-				logger.Info("SSE流处理完成",
+				logger.Info("[环节3] Monica返回本软件 - SSE流处理完成",
 					zap.String("model", p.model),
 					zap.String("finish_reason", "normal"),
 					zap.Int64("chunk_count", chunkCount),
@@ -176,11 +180,18 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 
 		// 记录chunk接收日志
 		atomic.AddInt64(&chunkCount, 1)
-		if p.cfg != nil && p.cfg.Logging.EnableRequestLog && chunkCount%10 == 1 {
+		if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+			// 对于每个chunk，记录文本内容预览（截断版）
+			textPreview := sseData.Text
+			if len(textPreview) > 100 {
+				textPreview = textPreview[:100] + "..."
+			}
+			
 			logger.Debug("SSE数据chunk接收",
 				zap.String("model", p.model),
 				zap.Int64("chunk_number", chunkCount),
 				zap.Int("text_length", len(sseData.Text)),
+				zap.String("text_preview", textPreview),
 				zap.Bool("finished", sseData.Finished),
 				zap.String("agent_type", sseData.AgentStatus.Type),
 			)
@@ -241,6 +252,21 @@ func CollectMonicaSSEToCompletion(model string, r io.Reader) (*openai.ChatComple
 		return nil, err
 	}
 
+	// 记录完整的响应内容
+	fullContent := fullContentBuilder.String()
+	if len(fullContent) > 0 {
+		logger.Info("Monica完整响应内容",
+			zap.String("model", model),
+			zap.Int("content_length", len(fullContent)),
+			zap.String("content_preview", func() string {
+				if len(fullContent) > 200 {
+					return fullContent[:200] + "..."
+				}
+				return fullContent
+			}()),
+		)
+	}
+
 	// 构造完整的响应
 	response := &openai.ChatCompletionResponse{
 		ID:      fmt.Sprintf("chatcmpl-%s", utils.RandStringUsingMathRand(29)),
@@ -252,7 +278,7 @@ func CollectMonicaSSEToCompletion(model string, r io.Reader) (*openai.ChatComple
 				Index: 0,
 				Message: openai.ChatCompletionMessage{
 					Role:    "assistant",
-					Content: fullContentBuilder.String(),
+					Content: fullContent,
 				},
 				FinishReason: "stop",
 			},
