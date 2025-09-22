@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"monica-proxy/internal/config"
 	"monica-proxy/internal/logger"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -26,21 +27,87 @@ const (
 	ImageResultURL   = "https://api.monica.im/api/image_tools/loop_result"
 )
 
-// 图片相关常量
+// 文件相关常量
 const (
-	MaxImageSize         = 10 * 1024 * 1024 // 10MB
-	ImageModule          = "chat_bot"
-	ImageLocation        = "files"
-	ImageUploadTimeout   = 30 * time.Second // 图片上传超时时间
+	MaxFileSize          = 100 * 1024 * 1024 // 100MB (遵循OpenAI限制)
+	MaxImageSize         = 10 * 1024 * 1024  // 10MB
+	FileModule           = "chat_bot"
+	FileLocation         = "files"
+	FileUploadTimeout    = 60 * time.Second // 文件上传超时时间
 	MaxConcurrentUploads = 5                // 最大并发上传数
 )
 
-// 支持的图片格式
-var SupportedImageTypes = map[string]bool{
-	"image/jpeg": true,
-	"image/png":  true,
-	"image/gif":  true,
-	"image/webp": true,
+// OpenAI兼容的文件类型映射
+var SupportedFileTypes = map[string]FileTypeInfo{
+	// 图片类型
+	"image/jpeg": {Extension: ".jpg", Category: "image", MaxSize: MaxImageSize},
+	"image/png":  {Extension: ".png", Category: "image", MaxSize: MaxImageSize},
+	"image/gif":  {Extension: ".gif", Category: "image", MaxSize: MaxImageSize},
+	"image/webp": {Extension: ".webp", Category: "image", MaxSize: MaxImageSize},
+
+	// 文档类型
+	"application/pdf":    {Extension: ".pdf", Category: "document", MaxSize: MaxFileSize},
+	"application/msword": {Extension: ".doc", Category: "document", MaxSize: MaxFileSize},
+	"application/vnd.openxmlformats-officedocument.wordprocessingml.document": {Extension: ".docx", Category: "document", MaxSize: MaxFileSize},
+	"application/vnd.ms-excel": {Extension: ".xls", Category: "document", MaxSize: MaxFileSize},
+	"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":         {Extension: ".xlsx", Category: "document", MaxSize: MaxFileSize},
+	"application/vnd.ms-powerpoint":                                             {Extension: ".ppt", Category: "document", MaxSize: MaxFileSize},
+	"application/vnd.openxmlformats-officedocument.presentationml.presentation": {Extension: ".pptx", Category: "document", MaxSize: MaxFileSize},
+
+	// 文本类型
+	"text/plain":       {Extension: ".txt", Category: "text", MaxSize: MaxFileSize},
+	"text/markdown":    {Extension: ".md", Category: "text", MaxSize: MaxFileSize},
+	"text/csv":         {Extension: ".csv", Category: "text", MaxSize: MaxFileSize},
+	"application/json": {Extension: ".json", Category: "text", MaxSize: MaxFileSize},
+	"application/xml":  {Extension: ".xml", Category: "text", MaxSize: MaxFileSize},
+	"text/xml":         {Extension: ".xml", Category: "text", MaxSize: MaxFileSize},
+
+	// 代码类型
+	"text/javascript":        {Extension: ".js", Category: "code", MaxSize: MaxFileSize},
+	"application/javascript": {Extension: ".js", Category: "code", MaxSize: MaxFileSize},
+	"text/html":              {Extension: ".html", Category: "code", MaxSize: MaxFileSize},
+	"text/css":               {Extension: ".css", Category: "code", MaxSize: MaxFileSize},
+	"application/x-python":   {Extension: ".py", Category: "code", MaxSize: MaxFileSize},
+	"text/x-python":          {Extension: ".py", Category: "code", MaxSize: MaxFileSize},
+
+	// 音频类型 (Monica可能支持)
+	"audio/mpeg": {Extension: ".mp3", Category: "audio", MaxSize: MaxFileSize},
+	"audio/wav":  {Extension: ".wav", Category: "audio", MaxSize: MaxFileSize},
+	"audio/ogg":  {Extension: ".ogg", Category: "audio", MaxSize: MaxFileSize},
+	"audio/mp4":  {Extension: ".m4a", Category: "audio", MaxSize: MaxFileSize},
+
+	// 视频类型 (Monica可能支持)
+	"video/mp4": {Extension: ".mp4", Category: "video", MaxSize: MaxFileSize},
+	"video/avi": {Extension: ".avi", Category: "video", MaxSize: MaxFileSize},
+	"video/mov": {Extension: ".mov", Category: "video", MaxSize: MaxFileSize},
+}
+
+// FileTypeInfo 文件类型信息
+type FileTypeInfo struct {
+	Extension string // 文件扩展名
+	Category  string // 文件类别
+	MaxSize   int64  // 最大文件大小
+}
+
+// AttachmentRequest 附件请求结构
+type AttachmentRequest struct {
+	Type     string `json:"type"`                // 附件类型: image_url, document, audio, etc.
+	Data     string `json:"data"`                // 文件数据 (base64, URL等)
+	FileName string `json:"file_name,omitempty"` // 文件名
+	MimeType string `json:"mime_type,omitempty"` // MIME类型
+}
+
+// 扩展openai包的消息内容类型定义
+type DocumentContent struct {
+	URL      string `json:"url"`                 // 文档URL或base64
+	Name     string `json:"name,omitempty"`      // 文档名称
+	MimeType string `json:"mime_type,omitempty"` // MIME类型
+}
+
+type AudioContent struct {
+	URL      string `json:"url"`                 // 音频URL或base64
+	Name     string `json:"name,omitempty"`      // 音频名称
+	MimeType string `json:"mime_type,omitempty"` // MIME类型
 }
 
 type ChatGPTRequest struct {
@@ -153,8 +220,8 @@ type FileInfo struct {
 	UseFullText  bool           `json:"use_full_text"`
 }
 
-// FileUploadRequest 文件上传请求
-type FileUploadRequest struct {
+// MonicaFileUploadRequest Monica API文件上传请求
+type MonicaFileUploadRequest struct {
 	Data []FileInfo `json:"data"`
 }
 
@@ -384,17 +451,31 @@ func ChatGPTToMonica(cfg *config.Config, chatReq openai.ChatCompletionRequest) (
 			continue
 		}
 		var msgContext string
-		var imgUrl []*openai.ChatMessageImageURL
-		if len(msg.MultiContent) > 0 { // 说明应该是多内容，可能是图片内容
+		var attachments []AttachmentRequest
+
+		// 处理多内容消息 (当前主要支持图片，为将来扩展做准备)
+		if len(msg.MultiContent) > 0 {
 			for _, content := range msg.MultiContent {
 				switch content.Type {
 				case "text":
 					msgContext = content.Text
 				case "image_url":
-					imgUrl = append(imgUrl, content.ImageURL)
+					// 图片处理 (当前支持)
+					attachments = append(attachments, AttachmentRequest{
+						Type: "image_url",
+						Data: content.ImageURL.URL,
+					})
+				// TODO: 未来支持更多文件类型
+				// case "document", "file":
+				//     // 文档/文件处理
+				// case "audio":
+				//     // 音频处理
+				default:
+					logger.Warn("不支持的内容类型", zap.String("type", string(content.Type)))
 				}
 			}
 		}
+
 		itemID := fmt.Sprintf("msg:%s", uuid.New().String())
 		itemType := "question"
 		if msg.Role == "assistant" {
@@ -402,30 +483,53 @@ func ChatGPTToMonica(cfg *config.Config, chatReq openai.ChatCompletionRequest) (
 		}
 
 		var content ItemContent
-		if len(imgUrl) > 0 {
-			// 为图片上传创建带超时的上下文
-			uploadCtx, cancel := context.WithTimeout(context.Background(), ImageUploadTimeout)
+
+		// 处理附件上传
+		if len(attachments) > 0 {
+			// 创建带超时的上下文
+			uploadCtx, cancel := context.WithTimeout(context.Background(), FileUploadTimeout)
 			defer cancel()
 
 			// 统计上传成功和失败数量
 			var successCount, failureCount int64
 
-			// 并发上传图片并收集结果
-			uploadResults := lop.Map(imgUrl, func(item *openai.ChatMessageImageURL, _ int) *FileInfo {
-				f, err := UploadBase64Image(uploadCtx, cfg, item.URL)
+			// 并发上传所有类型的文件
+			uploadResults := lop.Map(attachments, func(attachment AttachmentRequest, _ int) *FileInfo {
+				// 确定文件来源类型
+				var source FileUploadSource
+				if strings.HasPrefix(attachment.Data, "data:") {
+					source = SourceBase64
+				} else if strings.HasPrefix(attachment.Data, "http") {
+					source = SourceURL
+				} else {
+					// 假设是base64编码
+					source = SourceBase64
+				}
+
+				// 创建上传请求
+				fileReq := &UniversalFileUploadRequest{
+					Data:      attachment.Data,
+					Source:    source,
+					FileName:  attachment.FileName,
+					MimeType:  attachment.MimeType,
+					ParseFile: true, // 默认启用LLM解析
+				}
+
+				f, err := UploadUniversalFile(uploadCtx, cfg, fileReq)
 				if err != nil {
 					atomic.AddInt64(&failureCount, 1)
-					logger.Error("上传图片失败",
+					logger.Error("文件上传失败",
 						zap.Error(err),
-						zap.String("image_url", item.URL),
-						zap.Int("total_images", len(imgUrl)),
+						zap.String("file_type", attachment.Type),
+						zap.String("file_name", attachment.FileName),
 					)
-					return nil // 返回 nil 表示失败
+					return nil
 				}
 
 				if f == nil {
 					atomic.AddInt64(&failureCount, 1)
-					logger.Warn("图片上传返回空结果", zap.String("image_url", item.URL))
+					logger.Warn("文件上传返回空结果",
+						zap.String("file_name", attachment.FileName))
 					return nil
 				}
 
@@ -433,32 +537,32 @@ func ChatGPTToMonica(cfg *config.Config, chatReq openai.ChatCompletionRequest) (
 				return f
 			})
 
-			// 过滤掉失败的上传，只保留成功的
-			fileIfoList := make([]FileInfo, 0, len(uploadResults))
+			// 过滤掉失败的上传
+			fileInfoList := make([]FileInfo, 0, len(uploadResults))
 			for _, result := range uploadResults {
 				if result != nil {
-					fileIfoList = append(fileIfoList, *result)
+					fileInfoList = append(fileInfoList, *result)
 				}
 			}
 
 			// 记录上传统计信息
 			if failureCount > 0 {
-				logger.Warn("图片上传完成",
+				logger.Warn("文件上传完成",
 					zap.Int64("success_count", successCount),
 					zap.Int64("failure_count", failureCount),
-					zap.Int("total_images", len(imgUrl)),
+					zap.Int("total_attachments", len(attachments)),
 				)
 			} else {
-				logger.Info("所有图片上传成功",
+				logger.Info("所有文件上传成功",
 					zap.Int64("success_count", successCount),
-					zap.Int("total_images", len(imgUrl)),
+					zap.Int("total_attachments", len(attachments)),
 				)
 			}
 
 			content = ItemContent{
 				Type:        "file_with_text",
 				Content:     msgContext,
-				FileInfos:   fileIfoList,
+				FileInfos:   fileInfoList,
 				IsIncognito: true,
 			}
 		} else {
@@ -558,7 +662,7 @@ func ChatGPTToCustomBot(cfg *config.Config, chatReq openai.ChatCompletionRequest
 		var content ItemContent
 		if len(imgUrl) > 0 {
 			// 处理图片上传
-			uploadCtx, cancel := context.WithTimeout(context.Background(), ImageUploadTimeout)
+			uploadCtx, cancel := context.WithTimeout(context.Background(), FileUploadTimeout)
 			defer cancel()
 
 			var successCount, failureCount int64

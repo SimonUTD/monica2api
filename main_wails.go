@@ -295,8 +295,17 @@ func (a *WailsApp) StartService() error {
 
 	cfg := a.configManager.GetConfig()
 
-	// 设置日志级别
-	logger.SetLevel(cfg.Logging.Level)
+	// 设置日志配置
+	logOutput := cfg.Logging.Output
+	if logOutput == "file" {
+		// 如果是文件模式，使用用户目录下的日志路径
+		if userHome, err := os.UserHomeDir(); err == nil {
+			logOutput = filepath.Join(userHome, ".monica-proxy", "logs", "monica-proxy.log")
+		} else {
+			logOutput = "./logs/monica-proxy.log"
+		}
+	}
+	logger.UpdateConfig(cfg.Logging.Level, cfg.Logging.Format, logOutput, cfg.Logging.MaskSensitive)
 
 	// 创建应用实例
 	utils.InitHTTPClients(cfg)
@@ -589,7 +598,12 @@ func (a *WailsApp) OpenLogDirectory() error {
 
 // GetLogFilePath 获取日志文件路径
 func (a *WailsApp) GetLogFilePath() string {
-	// 获取用户日志目录
+	// 优先从日志配置获取路径
+	if logPath := logger.GetLogFilePath(); logPath != "" {
+		return logPath
+	}
+	
+	// 如果配置中不是文件路径，使用默认路径
 	var logPath string
 	if userHome, err := os.UserHomeDir(); err == nil {
 		logPath = filepath.Join(userHome, ".monica-proxy", "logs", "monica-proxy.log")

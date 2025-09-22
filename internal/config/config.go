@@ -145,7 +145,7 @@ func GetDefaultConfig() *Config {
 		Logging: LoggingConfig{
 			Level:            "info",
 			Format:           "json",
-			Output:           "stdout",
+			Output:           "file", // 将在运行时替换为实际路径
 			EnableRequestLog: true,
 			MaskSensitive:    true,
 		},
@@ -273,6 +273,9 @@ func overrideWithEnv(config *Config) {
 	}
 	if format := os.Getenv("LOG_FORMAT"); format != "" {
 		config.Logging.Format = format
+	}
+	if output := os.Getenv("LOG_OUTPUT"); output != "" {
+		config.Logging.Output = output
 	}
 	
 	// 代理配置

@@ -31,6 +31,7 @@ func RegisterRoutes(e *echo.Echo, cfg *config.Config) {
 	modelService := service.NewModelService(cfg)
 	imageService := service.NewImageService(cfg)
 	customBotService := service.NewCustomBotService(cfg)
+	fileService := service.NewFileService(cfg)
 
 	// ChatGPT 风格的请求转发到 /v1/chat/completions
 	e.POST("/v1/chat/completions", createChatCompletionHandler(chatService, customBotService, cfg))
@@ -38,6 +39,13 @@ func RegisterRoutes(e *echo.Echo, cfg *config.Config) {
 	e.GET("/v1/models", createListModelsHandler(modelService))
 	// DALL-E 风格的图片生成请求
 	e.POST("/v1/images/generations", createImageGenerationHandler(imageService))
+
+	// OpenAI兼容的文件管理API
+	e.POST("/v1/files", createFileUploadHandler(fileService))
+	e.GET("/v1/files/:file_id", createGetFileHandler(fileService))
+	e.GET("/v1/files", createListFilesHandler(fileService))
+	e.DELETE("/v1/files/:file_id", createDeleteFileHandler(fileService))
+
 	// Custom Bot 测试接口
 	e.POST("/v1/chat/custom-bot/:bot_uid", createCustomBotHandler(customBotService, cfg))
 	// 新增不带bot_uid的路由，使用环境变量中的BOT_UID
@@ -199,5 +207,100 @@ func createCustomBotHandler(service service.CustomBotService, cfg *config.Config
 
 		// 非流式响应
 		return c.JSON(http.StatusOK, result)
+	}
+}
+
+// createFileUploadHandler 创建文件上传处理器
+func createFileUploadHandler(fileService service.FileService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// 解析multipart form
+		form, err := c.MultipartForm()
+		if err != nil {
+			return errors.NewBadRequestError("解析multipart form失败", err)
+		}
+		defer form.RemoveAll()
+
+		// 获取上传的文件
+		files := form.File["file"]
+		if len(files) == 0 {
+			return errors.NewBadRequestError("未找到上传的文件", nil)
+		}
+
+		fileHeader := files[0]
+
+		// 获取purpose参数
+		purpose := c.FormValue("purpose")
+		if purpose == "" {
+			purpose = "assistants" // 默认用途
+		}
+
+		// 上传文件
+		fileObject, err := fileService.UploadFile(c.Request().Context(), fileHeader, purpose)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, fileObject)
+	}
+}
+
+// createGetFileHandler 创建获取文件处理器
+func createGetFileHandler(fileService service.FileService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		fileID := c.Param("file_id")
+		if fileID == "" {
+			return errors.NewBadRequestError("file_id参数不能为空", nil)
+		}
+
+		fileObject, err := fileService.GetFile(c.Request().Context(), fileID)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, fileObject)
+	}
+}
+
+// createListFilesHandler 创建文件列表处理器
+func createListFilesHandler(fileService service.FileService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		files, err := fileService.ListFiles(c.Request().Context())
+		if err != nil {
+			return err
+		}
+
+		response := types.FileListResponse{
+			Object: "list",
+			Data:   make([]types.FileObject, len(files)),
+		}
+
+		for i, file := range files {
+			response.Data[i] = *file
+		}
+
+		return c.JSON(http.StatusOK, response)
+	}
+}
+
+// createDeleteFileHandler 创建删除文件处理器
+func createDeleteFileHandler(fileService service.FileService) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		fileID := c.Param("file_id")
+		if fileID == "" {
+			return errors.NewBadRequestError("file_id参数不能为空", nil)
+		}
+
+		err := fileService.DeleteFile(c.Request().Context(), fileID)
+		if err != nil {
+			return err
+		}
+
+		response := types.DeleteFileResponse{
+			ID:      fileID,
+			Object:  "file",
+			Deleted: true,
+		}
+
+		return c.JSON(http.StatusOK, response)
 	}
 }

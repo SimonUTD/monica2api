@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-const MaxFileSize = 10 * 1024 * 1024 // 10MB
+// MaxFileSize moved to monica.go to avoid duplication
 
 var imageCache sync.Map
 
@@ -78,8 +78,8 @@ func UploadBase64Image(ctx context.Context, cfg *config.Config, base64Data strin
 	// 5. 获取预签名URL
 	preSignReq := &PreSignRequest{
 		FilenameList: []string{fileInfo.FileName},
-		Module:       ImageModule,
-		Location:     ImageLocation,
+		Module:       FileModule,
+		Location:     FileLocation,
 		ObjID:        uuid.New().String(),
 	}
 
@@ -113,7 +113,7 @@ func UploadBase64Image(ctx context.Context, cfg *config.Config, base64Data strin
 
 	// 7. 创建文件对象
 	fileInfo.ObjectURL = preSignResp.Data.ObjectURLList[0]
-	uploadReq := &FileUploadRequest{
+	uploadReq := &MonicaFileUploadRequest{
 		Data: []FileInfo{*fileInfo},
 	}
 
@@ -180,12 +180,13 @@ func UploadBase64Image(ctx context.Context, cfg *config.Config, base64Data strin
 
 // validateImageBytes 验证图片字节数据的格式和大小
 func validateImageBytes(imageData []byte, mimeType string) (*FileInfo, error) {
-	if len(imageData) > MaxFileSize {
-		return nil, fmt.Errorf("file size exceeds limit: %d > %d", len(imageData), MaxFileSize)
+	if len(imageData) > MaxImageSize {
+		return nil, fmt.Errorf("file size exceeds limit: %d > %d", len(imageData), MaxImageSize)
 	}
 
 	contentType := http.DetectContentType(imageData)
-	if !SupportedImageTypes[contentType] {
+	typeInfo, supported := SupportedFileTypes[contentType]
+	if !supported || typeInfo.Category != "image" {
 		return nil, fmt.Errorf("unsupported image type: %s", contentType)
 	}
 

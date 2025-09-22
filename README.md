@@ -16,6 +16,8 @@
 - ✅ **ChatGPT API完全兼容** - 无缝替换OpenAI接口，支持所有标准参数
 - ✅ **流式响应** - 完整的SSE流式对话体验，支持实时输出
 - ✅ **Monica模型支持** - GPT-4o、Claude-4、Gemini等主流模型完整映射
+- ✅ **多文件类型支持** - 文档、图片、音频、视频等多种格式自动处理
+- ✅ **文件管理API** - OpenAI兼容的文件上传、管理和删除接口
 
 ## ✨ **必要提示**
 1. 本项目是模拟http请求，来使用你的Monica账号进行请求。如果对应的模型、服务要消耗Monica高级积分，这个程序不能幸免；
@@ -224,6 +226,10 @@ wails dev
 - `POST /v1/chat/completions` - 聊天对话（兼容ChatGPT）
 - `GET /v1/models` - 获取模型列表
 - `POST /v1/images/generations` - 图片生成（兼容DALL-E）
+- `POST /v1/files` - 文件上传（支持文档、图片、音频等）
+- `GET /v1/files/:file_id` - 获取文件信息
+- `GET /v1/files` - 列出文件
+- `DELETE /v1/files/:file_id` - 删除文件
 
 ### 认证方式
 
@@ -246,6 +252,44 @@ curl -X POST http://localhost:8080/v1/chat/completions \
     "stream": true
   }'
 ```
+
+### 文件上传API示例
+
+```bash
+# 上传文档文件
+curl -X POST http://localhost:8080/v1/files \
+  -H "Authorization: Bearer your_token" \
+  -F "file=@document.pdf" \
+  -F "purpose=assistants"
+
+# 在聊天中使用已上传的文件
+curl -X POST http://localhost:8080/v1/chat/completions \
+  -H "Authorization: Bearer your_token" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gpt-4o",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {"type": "text", "text": "请分析这个文档的内容"},
+          {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+        ]
+      }
+    ]
+  }'
+```
+
+### 支持的文件类型
+
+| 文件类别   | 支持格式                                                      | 最大大小 | 说明           |
+|--------|-----------------------------------------------------------|------|--------------|
+| **文档**   | PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX                    | 100MB | 自动解析文档内容     |
+| **文本**   | TXT, MD, CSV, JSON, XML                                   | 100MB | 纯文本文件        |
+| **代码**   | JS, HTML, CSS, PY, 等                                      | 100MB | 代码文件         |
+| **图片**   | JPEG, PNG, GIF, WebP                                     | 10MB  | 图像识别和分析      |
+| **音频**   | MP3, WAV, OGG, M4A                                        | 100MB | 音频转录（如支持）    |
+| **视频**   | MP4, AVI, MOV                                             | 100MB | 视频分析（如支持）    |
 
 ### 支持的模型
 
