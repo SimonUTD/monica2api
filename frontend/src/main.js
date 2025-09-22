@@ -6,6 +6,12 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
 import App from './App.vue'
 
+// 导入全局样式
+import './styles/reset.css'
+import './styles/variables.css'
+import './styles/components.css'
+import './styles/layouts.css'
+
 const app = createApp(App)
 const pinia = createPinia()
 

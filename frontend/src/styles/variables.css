@@ -1,0 +1,96 @@
+/* ===========================================
+   CSS变量定义 - 全局设计系统
+   =========================================== */
+
+:root {
+  /* 布局变量 */
+  --container-max-width: 1200px;
+  --container-padding: 24px;
+  --form-label-width: 120px;
+  --button-min-width: 120px;
+  --button-height: 40px;
+  --card-gap: 24px;
+  --section-gap: 32px;
+  
+  /* 颜色变量 - Element Plus主题色 */
+  --primary-color: #409EFF;
+  --success-color: #67C23A;
+  --warning-color: #E6A23C;
+  --error-color: #F56C6C;
+  --info-color: #909399;
+  
+  /* 中性颜色 */
+  --text-primary: #303133;
+  --text-regular: #606266;
+  --text-secondary: #909399;
+  --text-placeholder: #C0C4CC;
+  
+  /* 边框颜色 */
+  --border-color: #DCDFE6;
+  --border-light: #E4E7ED;
+  
+  /* 背景颜色 */
+  --background-white: #FFFFFF;
+  --background-page: #F5F7FA;
+  --background-section: #FAFAFA;
+  
+  /* 渐变色变量 - 统一蓝紫色调 */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-success: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  --gradient-info: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-warning: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+  --gradient-error: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+  
+  /* 间距变量 */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* 圆角变量 */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  
+  /* 阴影变量 */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.1);
+  
+  /* 字体变量 */
+  --font-size-xs: 12px;
+  --font-size-sm: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 18px;
+  --font-size-2xl: 20px;
+  --font-size-3xl: 24px;
+  
+  /* 字体权重 */
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 600;
+  
+  /* 行高 */
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --line-height-loose: 1.75;
+  
+  /* 过渡动画 */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+  
+  /* Z-index层级 */
+  --z-dropdown: 1000;
+  --z-sticky: 1020;
+  --z-fixed: 1030;
+  --z-modal-backdrop: 1040;
+  --z-modal: 1050;
+  --z-popover: 1060;
+  --z-tooltip: 1070;
+}
+

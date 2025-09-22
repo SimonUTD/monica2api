@@ -1,14 +1,17 @@
 <template>
-  <div id="app">
+  <div id="app" class="page-layout light-theme">
     <el-container style="height: 100vh;">
-      <el-header style="background-color: #409EFF; color: white; display: flex; align-items: center; justify-content: space-between;">
-        <h2 style="margin: 0;">Monica Proxy Wails - 基于界面的Monica（Web）转换成 API 的工具</h2>
-        <div>
-          <el-tag v-if="appStore.isServiceRunning" type="success" effect="dark">
+      <el-header class="app-header">
+        <div class="app-header-content">
+          <h1 class="app-title">Monica Proxy Wails</h1>
+          <p class="app-subtitle">基于界面的Monica（Web）转换成 API 的工具</p>
+        </div>
+        <div class="app-status">
+          <el-tag v-if="appStore.isServiceRunning" class="status-tag running" effect="dark">
             <el-icon><VideoPlay /></el-icon>
             服务运行中
           </el-tag>
-          <el-tag v-else type="info" effect="dark">
+          <el-tag v-else class="status-tag stopped" effect="dark">
             <el-icon><VideoPause /></el-icon>
             服务未启动
           </el-tag>
@@ -16,33 +19,35 @@
       </el-header>
       
       <el-container>
-        <el-aside width="200px" style="background-color: #f5f5f5;">
+        <el-aside class="app-sidebar">
           <el-menu
             :default-active="$route.path"
             router
-            style="height: 100%; border-right: none;"
+            class="sidebar-menu"
           >
             <el-menu-item index="/main">
               <el-icon><Setting /></el-icon>
-              主要配置
+              <span>主要配置</span>
             </el-menu-item>
             <el-menu-item index="/server">
-              <el-icon><Server /></el-icon>
-              服务器配置
+              <el-icon><Cpu /></el-icon>
+              <span>服务器配置</span>
             </el-menu-item>
             <el-menu-item index="/logging">
               <el-icon><Document /></el-icon>
-              日志配置
+              <span>日志配置</span>
             </el-menu-item>
             <el-menu-item index="/copyright">
               <el-icon><InfoFilled /></el-icon>
-              版权信息
+              <span>版权信息</span>
             </el-menu-item>
           </el-menu>
         </el-aside>
         
-        <el-main>
-          <router-view />
+        <el-main class="app-main">
+          <div class="page-content">
+            <router-view />
+          </div>
         </el-main>
       </el-container>
     </el-container>
@@ -52,6 +57,7 @@
 <script setup>
 import { useAppStore } from '@/stores/app'
 import { onMounted } from 'vue'
+import { Setting, Cpu, Document, InfoFilled, VideoPlay, VideoPause } from '@element-plus/icons-vue'
 import {GetServiceStatus,GetConfig} from '../wailsjs/wailsjs/go/main/WailsApp.js'
 const appStore = useAppStore()
 
@@ -80,15 +86,175 @@ async function getServiceStatu() {
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  height: 100vh;
+/* 强制浅色主题 */
+.light-theme {
+  background-color: #ffffff !important;
+  color: #303133 !important;
 }
 
-body {
+.light-theme .app-header {
+  background: var(--gradient-primary) !important;
+  color: white !important;
+}
+
+.light-theme .app-sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e4e7ed !important;
+}
+
+.light-theme .app-main {
+  background: #f5f7fa !important;
+}
+
+.light-theme .page-content {
+  background: #f5f7fa !important;
+}
+
+/* 应用头部样式 */
+.app-header {
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.app-header-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.app-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
   margin: 0;
+  color: white;
+}
+
+.app-subtitle {
+  font-size: var(--font-size-sm);
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.app-status {
+  display: flex;
+  align-items: center;
+}
+
+.status-tag {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-md);
+  font-weight: var(--font-weight-medium);
+}
+
+.status-tag.running {
+  background: var(--gradient-success);
+  border: none;
+}
+
+.status-tag.stopped {
+  background: var(--gradient-info);
+  border: none;
+}
+
+/* 应用侧边栏样式 */
+.app-sidebar {
+  background: var(--background-section);
+  border-right: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  width: 200px !important;
+  min-width: 200px;
+  max-width: 250px;
+}
+
+.sidebar-menu {
+  height: 100%;
+  border-right: none;
+  background: transparent;
+}
+
+.sidebar-menu .el-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--text-regular);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-menu .el-menu-item:hover {
+  background: rgba(64, 158, 255, 0.1);
+  color: var(--primary-color);
+}
+
+.sidebar-menu .el-menu-item.is-active {
+  background: rgba(64, 158, 255, 0.15);
+  color: var(--primary-color);
+  font-weight: var(--font-weight-medium);
+}
+
+.sidebar-menu .el-menu-item .el-icon {
+  font-size: var(--font-size-lg);
+}
+
+/* 应用主内容区域样式 */
+.app-main {
+  background: var(--background-page);
   padding: 0;
+  overflow: hidden;
+}
+
+.page-content {
+  min-height: calc(100vh - 60px);
+  padding: var(--spacing-lg);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+    padding: var(--spacing-md);
+    text-align: center;
+  }
+  
+  .app-header-content {
+    align-items: center;
+    text-align: center;
+  }
+  
+  .app-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .app-subtitle {
+    font-size: var(--font-size-xs);
+  }
+  
+  .app-sidebar {
+    width: 60px !important;
+    min-width: 60px;
+    max-width: 60px;
+  }
+  
+  .sidebar-menu .el-menu-item span {
+    display: none;
+  }
+  
+  .sidebar-menu .el-menu-item {
+    justify-content: center;
+    padding: var(--spacing-md);
+  }
+  
+  .page-content {
+    padding: var(--spacing-md);
+  }
 }
 </style>

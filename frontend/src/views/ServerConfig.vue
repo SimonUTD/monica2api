@@ -1,15 +1,55 @@
 <template>
-  <div class="server-config">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>服务器配置</span>
+  <div class="page-layout">
+    <div class="page-header">
+      <h1 class="page-title">服务器配置</h1>
+      <p class="page-subtitle">配置服务器监听地址、端口和代理设置</p>
+    </div>
+    
+    <!-- 状态卡片区域 -->
+    <div class="status-row">
+      <div class="status-card">
+        <div class="status-icon success">
+          <el-icon><Monitor /></el-icon>
         </div>
-      </template>
+        <h3 class="status-title">服务器状态</h3>
+        <p class="status-description">
+          {{ form.server.host }}:{{ form.server.port }}
+        </p>
+      </div>
       
-      <el-form :model="form" label-width="120px">
-        <!-- 服务器基本配置 -->
-        <el-divider content-position="left">服务器基本配置</el-divider>
+      <div class="status-card" :class="hasProxy ? 'success' : 'info'">
+        <div class="status-icon" :class="hasProxy ? 'success' : 'info'">
+          <el-icon><Share /></el-icon>
+        </div>
+        <h3 class="status-title">代理状态</h3>
+        <p class="status-description">
+          {{ proxyStatus }}
+        </p>
+      </div>
+      
+      <div class="status-card">
+        <div class="status-icon info">
+          <el-icon><Timer /></el-icon>
+        </div>
+        <h3 class="status-title">超时设置</h3>
+        <p class="status-description">
+          读取: {{ form.server.readTimeout }}s | 写入: {{ form.server.writeTimeout }}s
+        </p>
+      </div>
+    </div>
+    
+    <!-- 配置表单区域 -->
+    <div class="config-grid">
+      <div class="config-card">
+        <div class="config-card-header">
+          <el-icon><Monitor /></el-icon>
+          <div>
+            <h3 class="config-card-title">服务器基本配置</h3>
+            <p class="config-card-description">配置服务器监听地址和端口参数</p>
+          </div>
+        </div>
+        
+        <el-form :model="form" label-width="120px" size="large" class="form-large">
         <el-form-item label="主机地址">
           <el-input
             v-model="form.server.host"
@@ -48,9 +88,19 @@
             :max="300"
           />
         </el-form-item>
+      </el-form>
+      </div>
+      
+      <div class="config-card">
+        <div class="config-card-header">
+          <el-icon><Share /></el-icon>
+          <div>
+            <h3 class="config-card-title">代理配置</h3>
+            <p class="config-card-description">配置HTTP/HTTPS代理设置</p>
+          </div>
+        </div>
         
-        <!-- 代理配置 -->
-        <el-divider content-position="left">代理配置</el-divider>
+        <el-form :model="form" label-width="120px" size="large" class="form-large">
         <el-form-item label="HTTP代理">
           <el-input
             v-model="form.proxy.httpProxy"
@@ -83,15 +133,16 @@
           />
         </el-form-item>
       </el-form>
-      
-      <!-- 保存配置按钮 -->
-      <div class="save-section">
-        <el-button type="primary" @click="saveConfig" :loading="loading">
-          <el-icon><Check /></el-icon>
-          保存配置
-        </el-button>
       </div>
-    </el-card>
+    </div>
+    
+    <!-- 保存配置按钮 -->
+    <div class="save-section">
+      <button class="btn btn-primary" @click="saveConfig" :loading="loading">
+        <el-icon><Check /></el-icon>
+        保存配置
+      </button>
+    </div>
   </div>
 </template>
 
@@ -163,23 +214,52 @@ async function saveConfig() {
 </script>
 
 <style scoped>
-.server-config {
-  max-width: 800px;
-  margin: 0 auto;
+/* 页面布局增强 */
+.page-layout {
+  padding: var(--spacing-lg);
+  background: var(--background-page);
+  min-height: 100vh;
 }
 
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-weight: bold;
-  font-size: 18px;
+/* 状态卡片样式增强 */
+.status-row {
+  margin-bottom: var(--spacing-xl);
 }
 
-.save-section {
-  text-align: center;
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
+.status-card {
+  transition: transform var(--transition-normal);
+}
+
+.status-card:hover {
+  transform: translateY(-4px);
+}
+
+/* 配置网格布局 */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--card-gap);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-layout {
+    padding: var(--spacing-md);
+  }
+  
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-layout {
+    padding: var(--spacing-sm);
+  }
+  
+  .status-row {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

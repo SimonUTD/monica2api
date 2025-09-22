@@ -1,159 +1,160 @@
 <template>
-  <div class="copyright">
-    <el-card>
-      <template #header>
-        <div class="card-header">
-          <span>版权信息</span>
-        </div>
-      </template>
-      
-      <div class="content">
-        <!-- 版权标题 -->
-        <div class="section">
-          <h2><el-icon><Document /></el-icon> 许可证信息</h2>
-          <el-alert
-            title="MIT License"
-            type="info"
-            :closable="false"
-            show-icon
-            style="margin-bottom: 20px;"
-          />
-          
-          <el-card class="license-card">
-            <div class="license-text">
-              <p><strong>版权所有 (c) 2024 本项目贡献者</strong></p>
-              <br>
-              <p>特此免费授予任何获得本软件副本及相关文档文件（以下简称"软件"）的人不受限制地处理软件的权利，包括但不限于使用、复制、修改、合并、发布、分发、再许可和/或销售软件副本的权利，并允许获得软件的人这样做，但须符合以下条件：</p>
-              <br>
-              <p>上述版权声明和本许可声明应包含在软件的所有副本或实质性部分中。</p>
-              <br>
-              <p><strong>免责声明：</strong>本软件按"原样"提供，不提供任何明示或暗示的保证，包括但不限于适销性、特定用途适用性和非侵权性的保证。在任何情况下，作者或版权持有人均不对因软件或软件的使用或其他交易而产生的任何索赔、损害或其他责任承担责任，无论是在合同、侵权还是其他方面。</p>
-            </div>
-          </el-card>
+  <div class="page-layout">
+    <div class="page-header">
+      <h1 class="page-title">版权信息</h1>
+      <p class="page-subtitle">查看项目许可证、版本信息和相关链接</p>
+    </div>
+    
+    <!-- 内容区域 -->
+    <div class="content-grid">
+      <!-- 许可证信息卡片 -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <el-icon><Document /></el-icon>
+          <div>
+            <h3 class="content-card-title">许可证信息</h3>
+            <p class="content-card-description">MIT License 开源许可证</p>
+          </div>
         </div>
         
-        <!-- 原始项目信息 -->
-        <div class="section">
-          <h2><el-icon><Link /></el-icon> 原始项目信息</h2>
+        <div class="license-content">          
+          <div class="license-text">
+            <p><strong>版权所有 (c) 2024 本项目贡献者</strong></p>
+            <br>
+            <p>特此免费授予任何获得本软件副本及相关文档文件（以下简称"软件"）的人不受限制地处理软件的权利，包括但不限于使用、复制、修改、合并、发布、分发、再许可和/或销售软件副本的权利，并允许获得软件的人这样做，但须符合以下条件：</p>
+            <br>
+            <p>上述版权声明和本许可声明应包含在软件的所有副本或实质性部分中。</p>
+            <br>
+            <p><strong>免责声明：</strong>本软件按"原样"提供，不提供任何明示或暗示的保证，包括但不限于适销性、特定用途适用性和非侵权性的保证。在任何情况下，作者或版权持有人均不对因软件或软件的使用或其他交易而产生的任何索赔、损害或其他责任承担责任，无论是在合同、侵权还是其他方面。</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 原始项目信息卡片 -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <el-icon><Link /></el-icon>
+          <div>
+            <h3 class="content-card-title">原始项目信息</h3>
+            <p class="content-card-description">基于开源项目进行二次开发</p>
+          </div>
+        </div>
+        
+        <div class="project-content">
           <el-alert
             title="基于开源项目进行二次开发"
             type="success"
             :closable="false"
             show-icon
-            style="margin-bottom: 20px;"
+            class="mb-lg"
           />
           
-          <el-card class="original-project-card">
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="项目名称">
-                monica-proxy
-              </el-descriptions-item>
-              <el-descriptions-item label="原始作者">
-                ycvk
-              </el-descriptions-item>
-              <el-descriptions-item label="项目地址">
-                <el-link
-                  href="https://github.com/ycvk/monica-proxy"
-                  target="_blank"
-                  type="primary"
-                >
-                  https://github.com/ycvk/monica-proxy
-                  <el-icon><Link /></el-icon>
-                </el-link>
-              </el-descriptions-item>
-              <el-descriptions-item label="许可证">
-                MIT License
-              </el-descriptions-item>
-              <el-descriptions-item label="本项目特点">
-                <el-tag type="primary" style="margin-right: 5px;">界面优化</el-tag>
-                <el-tag type="success" style="margin-right: 5px;">功能扩展</el-tag>
-                <el-tag type="warning">多GUI框架支持</el-tag>
-              </el-descriptions-item>
-            </el-descriptions>
-            
-            <div class="project-description">
-              <h3>项目说明</h3>
-              <p>本项目是基于 <strong>https://github.com/ycvk/monica-proxy</strong> 项目进行的二次开发。</p>
-              <p>原始项目作者：<strong>ycvk</strong></p>
-              <p>原始项目许可证：<strong>MIT License</strong></p>
-              <p>感谢原作者 <strong>ycvk</strong> 的杰出贡献，本项目在原项目基础上进行了功能扩展和界面优化，并提供了多种GUI框架支持（包括原生的Fyne框架和基于Web的Wails框架）。</p>
-            </div>
-          </el-card>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="项目名称">
+              monica-proxy
+            </el-descriptions-item>
+            <el-descriptions-item label="原始作者">
+              ycvk
+            </el-descriptions-item>
+            <el-descriptions-item label="项目地址">
+              <el-link
+                href="https://github.com/ycvk/monica-proxy"
+                target="_blank"
+                type="primary"
+              >
+                https://github.com/ycvk/monica-proxy
+                <el-icon><Link /></el-icon>
+              </el-link>
+            </el-descriptions-item>
+            <el-descriptions-item label="许可证">
+              MIT License
+            </el-descriptions-item>
+            <el-descriptions-item label="本项目特点">
+              <el-tag type="primary" class="mr-sm">界面优化</el-tag>
+              <el-tag type="success" class="mr-sm">功能扩展</el-tag>
+              <el-tag type="warning">多GUI框架支持</el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+          
+          <div class="project-description">
+            <h4>项目说明</h4>
+            <p>本项目是基于 <strong>https://github.com/ycvk/monica-proxy</strong> 项目进行的二次开发。</p>
+            <p>原始项目作者：<strong>ycvk</strong></p>
+            <p>原始项目许可证：<strong>MIT License</strong></p>
+            <p>感谢原作者 <strong>ycvk</strong> 的杰出贡献，本项目在原项目基础上进行了功能扩展和界面优化，并提供了多种GUI框架支持（包括原生的Fyne框架和基于Web的Wails框架）。</p>
+          </div>
         </div>
-        
-        <!-- 快速链接 -->
-        <div class="section">
-          <h2><el-icon><Share /></el-icon> 快速链接</h2>
-          <div class="quick-links">
-            <el-row :gutter="20">
-              <el-col :span="12">
-                <el-card class="link-card" shadow="hover">
-                  <div class="link-content">
-                    <el-icon size="40" color="#409EFF"><Link /></el-icon>
-                    <div class="link-info">
-                      <h4>原始项目</h4>
-                      <p>访问原始项目GitHub仓库</p>
-                      <el-button
-                        type="primary"
-                        size="small"
-                        @click="openOriginalProject"
-                      >
-                        访问项目
-                      </el-button>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-              <el-col :span="12">
-                <el-card class="link-card" shadow="hover">
-                  <div class="link-content">
-                    <el-icon size="40" color="#67C23A"><Document /></el-icon>
-                    <div class="link-info">
-                      <h4>许可证全文</h4>
-                      <p>查看MIT许可证完整内容</p>
-                      <el-button
-                        type="success"
-                        size="small"
-                        @click="showLicenseFull"
-                      >
-                        查看许可证
-                      </el-button>
-                    </div>
-                  </div>
-                </el-card>
-              </el-col>
-            </el-row>
+      </div>
+      
+      <!-- 快速链接卡片 -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <el-icon><Share /></el-icon>
+          <div>
+            <h3 class="content-card-title">快速链接</h3>
+            <p class="content-card-description">相关资源和文档链接</p>
           </div>
         </div>
         
-        <!-- 版本信息 -->
-        <div class="section">
-          <h2><el-icon><InfoFilled /></el-icon> 版本信息</h2>
-          <el-card>
-            <el-descriptions :column="2" border>
-              <el-descriptions-item label="应用名称">
-                Monica Proxy
-              </el-descriptions-item>
-              <el-descriptions-item label="版本">
-                1.0.0
-              </el-descriptions-item>
-              <el-descriptions-item label="GUI框架">
-                Wails v2 (本版本) / Fyne v2 (原版)
-              </el-descriptions-item>
-              <el-descriptions-item label="构建时间">
-                {{ buildTime }}
-              </el-descriptions-item>
-              <el-descriptions-item label="Go版本">
-                {{ goVersion }}
-              </el-descriptions-item>
-              <el-descriptions-item label="开发语言">
-                Go + Vue.js + Element Plus
-              </el-descriptions-item>
-            </el-descriptions>
-          </el-card>
+        <div class="links-grid">
+          <div class="link-item" @click="openOriginalProject">
+            <div class="link-icon">
+              <el-icon size="32"><Link /></el-icon>
+            </div>
+            <div class="link-info">
+              <h4>原始项目</h4>
+              <p>访问原始项目GitHub仓库</p>
+            </div>
+            <button class="btn btn-primary btn-sm">访问项目</button>
+          </div>
+          
+          <div class="link-item" @click="showLicenseFull">
+            <div class="link-icon success">
+              <el-icon size="32"><Document /></el-icon>
+            </div>
+            <div class="link-info">
+              <h4>许可证全文</h4>
+              <p>查看MIT许可证完整内容</p>
+            </div>
+            <button class="btn btn-success btn-sm">查看许可证</button>
+          </div>
         </div>
       </div>
-    </el-card>
+      
+      <!-- 版本信息卡片 -->
+      <div class="content-card">
+        <div class="content-card-header">
+          <el-icon><InfoFilled /></el-icon>
+          <div>
+            <h3 class="content-card-title">版本信息</h3>
+            <p class="content-card-description">应用版本和构建信息</p>
+          </div>
+        </div>
+        
+        <div class="version-content">
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="应用名称">
+              Monica Proxy
+            </el-descriptions-item>
+            <el-descriptions-item label="版本">
+              1.0.0
+            </el-descriptions-item>
+            <el-descriptions-item label="GUI框架">
+              Wails v2 (本版本) / Fyne v2 (原版)
+            </el-descriptions-item>
+            <el-descriptions-item label="构建时间">
+              {{ buildTime }}
+            </el-descriptions-item>
+            <el-descriptions-item label="Go版本">
+              {{ goVersion }}
+            </el-descriptions-item>
+            <el-descriptions-item label="开发语言">
+              Go + Vue.js + Element Plus
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+      </div>
+    </div>
     
     <!-- 许可证全文对话框 -->
     <el-dialog
@@ -209,87 +210,157 @@ function showLicenseFull() {
 </script>
 
 <style scoped>
-.copyright {
-  max-width: 1000px;
-  margin: 0 auto;
+/* 页面布局 */
+.page-layout {
+  padding: var(--spacing-lg);
+  background: var(--background-page);
+  min-height: 100vh;
 }
 
-.card-header {
+/* 内容网格布局 */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+  gap: var(--card-gap);
+}
+
+/* 内容卡片样式 */
+.content-card {
+  background: var(--background-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-light);
+  transition: all var(--transition-normal);
+  overflow: hidden;
+}
+
+.content-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+}
+
+/* 卡片头部样式 */
+.content-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  font-weight: bold;
-  font-size: 18px;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--background-section);
+  border-bottom: 1px solid var(--border-light);
 }
 
-.content {
-  padding: 20px 0;
+.content-card-header .el-icon {
+  font-size: var(--font-size-xl);
+  color: var(--primary-color);
 }
 
-.section {
-  margin-bottom: 40px;
+.content-card-title {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-primary);
 }
 
-.section h2 {
-  color: #409EFF;
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.content-card-description {
+  margin: var(--spacing-xs) 0 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
 }
 
-.license-card {
-  background-color: #f8f9fa;
+/* 许可证内容样式 */
+.license-content {
+  padding: var(--spacing-lg);
 }
 
 .license-text {
-  line-height: 1.8;
-  color: #333;
+  line-height: var(--line-height-relaxed);
+  color: var(--text-regular);
+  font-size: var(--font-size-sm);
+  background: var(--background-section);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
 }
 
 .license-text p {
-  margin-bottom: 10px;
+  margin-bottom: var(--spacing-sm);
 }
 
-.original-project-card {
-  background-color: #f0f9ff;
+.license-text strong {
+  color: var(--text-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* 项目内容样式 */
+.project-content {
+  padding: var(--spacing-lg);
 }
 
 .project-description {
-  margin-top: 20px;
-  padding: 15px;
-  background-color: #e6f3ff;
-  border-radius: 4px;
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--background-section);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
 }
 
-.project-description h3 {
-  color: #409EFF;
-  margin-bottom: 10px;
+.project-description h4 {
+  margin: 0 0 var(--spacing-md) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 .project-description p {
-  line-height: 1.6;
-  margin-bottom: 8px;
+  line-height: var(--line-height-normal);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-regular);
 }
 
-.quick-links {
-  margin-top: 20px;
+.project-description strong {
+  color: var(--primary-color);
 }
 
-.link-card {
-  cursor: pointer;
-  transition: all 0.3s ease;
+/* 链接网格样式 */
+.links-grid {
+  padding: var(--spacing-lg);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--spacing-lg);
 }
 
-.link-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.link-content {
+.link-item {
   display: flex;
   align-items: center;
-  gap: 15px;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--background-section);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.link-item:hover {
+  background: var(--background-hover);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.link-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  background: var(--gradient-primary);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.link-icon.success {
+  background: var(--gradient-success);
 }
 
 .link-info {
@@ -297,22 +368,38 @@ function showLicenseFull() {
 }
 
 .link-info h4 {
-  margin: 0 0 5px 0;
-  color: #303133;
+  margin: 0 0 var(--spacing-xs) 0;
+  color: var(--text-primary);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
 }
 
 .link-info p {
-  margin: 0 0 10px 0;
-  color: #909399;
-  font-size: 14px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
+/* 按钮样式 */
+.btn-sm {
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  min-width: 80px;
+  height: 32px;
+}
+
+/* 版本内容样式 */
+.version-content {
+  padding: var(--spacing-lg);
+}
+
+/* 许可证全文对话框样式 */
 .license-full-text {
   max-height: 70vh;
   overflow-y: auto;
-  padding: 20px;
-  background-color: #f8f9fa;
-  border-radius: 4px;
+  padding: var(--spacing-lg);
+  background: var(--background-section);
+  border-radius: var(--radius-md);
 }
 
 .license-full-text pre {
@@ -320,7 +407,62 @@ function showLicenseFull() {
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: 'Courier New', monospace;
-  font-size: 14px;
-  line-height: 1.5;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
+  color: var(--text-primary);
+}
+
+/* 间距工具类 */
+.mb-lg {
+  margin-bottom: var(--spacing-lg);
+}
+
+.mr-sm {
+  margin-right: var(--spacing-sm);
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-layout {
+    padding: var(--spacing-md);
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .content-card-header {
+    padding: var(--spacing-md);
+  }
+  
+  .license-content,
+  .project-content,
+  .links-grid,
+  .version-content {
+    padding: var(--spacing-md);
+  }
+  
+  .link-item {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .page-layout {
+    padding: var(--spacing-sm);
+  }
+  
+  .content-card-header {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-sm);
+  }
+  
+  .license-text,
+  .project-description {
+    padding: var(--spacing-md);
+  }
 }
 </style>

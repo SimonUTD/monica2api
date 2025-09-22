@@ -1,138 +1,124 @@
 <template>
-  <div class="logging-config">
+  <div class="page-layout">
+    <div class="page-header">
+      <h1 class="page-title">日志配置</h1>
+      <p class="page-subtitle">配置日志级别、格式和输出方式</p>
+    </div>
+    
     <!-- 日志系统状态卡片 -->
-    <el-row :gutter="20" class="status-row">
-      <el-col :span="8">
-        <el-card shadow="hover" class="status-card">
-          <div class="status-item">
-            <el-icon class="status-icon" :class="getLogLevelClass(form.logging.level)">
-              <Document />
-            </el-icon>
-            <div class="status-info">
-              <div class="status-title">日志级别</div>
-              <div class="status-value">
-                <el-tag :type="getLogLevelTag(form.logging.level)" size="large">
-                  {{ form.logging.level.toUpperCase() }}
-                </el-tag>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="status-card">
-          <div class="status-item">
-            <el-icon class="status-icon success">
-              <FolderOpened />
-            </el-icon>
-            <div class="status-info">
-              <div class="status-title">日志文件</div>
-              <div class="status-value">{{ formatFileSize(logFileSize) }}</div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-      <el-col :span="8">
-        <el-card shadow="hover" class="status-card">
-          <div class="status-item">
-            <el-icon class="status-icon" :class="form.logging.enableRequestLog ? 'warning' : 'info'">
-              <Warning />
-            </el-icon>
-            <div class="status-info">
-              <div class="status-title">详细日志</div>
-              <div class="status-value">
-                <el-tag :type="form.logging.enableRequestLog ? 'warning' : 'info'" size="large">
-                  {{ form.logging.enableRequestLog ? '已启用' : '已禁用' }}
-                </el-tag>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </el-col>
-    </el-row>
-
-    <!-- 主要配置区域 -->
-    <el-row :gutter="20">
-      <el-col :span="12">
-        <!-- 基本配置卡片 -->
-        <el-card class="config-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><Setting /></el-icon>
-              <span>基本配置</span>
-            </div>
-          </template>
-          
-          <el-form :model="form" label-width="100px" size="large">
-            <el-form-item label="日志级别">
-              <el-select v-model="form.logging.level" placeholder="选择日志级别" style="width: 100%">
-                <el-option label="DEBUG - 调试信息" value="debug" />
-                <el-option label="INFO - 一般信息" value="info" />
-                <el-option label="WARN - 警告信息" value="warn" />
-                <el-option label="ERROR - 错误信息" value="error" />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="日志格式">
-              <el-select v-model="form.logging.format" placeholder="选择日志格式" style="width: 100%">
-                <el-option label="JSON 格式" value="json" />
-                <el-option label="控制台格式" value="console" />
-              </el-select>
-            </el-form-item>
-            
-            <el-form-item label="输出方式">
-              <el-input 
-                v-model="outputDisplay" 
-                readonly 
-                placeholder="文件输出"
-              >
-                <template #prefix>
-                  <el-icon><Document /></el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-            
-            <el-form-item label="敏感信息">
-              <el-switch 
-                v-model="form.logging.maskSensitive"
-                active-text="掩盖"
-                inactive-text="不掩盖"
-                size="large"
-              />
-            </el-form-item>
-          </el-form>
-        </el-card>
-      </el-col>
+    <div class="status-row">
+      <div class="status-card">
+        <div class="status-icon" :class="getLogLevelClass(form.logging.level)">
+          <el-icon><Document /></el-icon>
+        </div>
+        <h3 class="status-title">日志级别</h3>
+        <p class="status-description">
+          <el-tag :type="getLogLevelTag(form.logging.level)" size="large">
+            {{ form.logging.level.toUpperCase() }}
+          </el-tag>
+        </p>
+      </div>
       
-      <el-col :span="12">
-        <!-- 高级配置卡片 -->
-        <el-card class="config-card">
-          <template #header>
-            <div class="card-header">
-              <el-icon><Tools /></el-icon>
-              <span>高级配置</span>
-            </div>
-          </template>
+      <div class="status-card success">
+        <div class="status-icon success">
+          <el-icon><FolderOpened /></el-icon>
+        </div>
+        <h3 class="status-title">日志文件</h3>
+        <p class="status-description">{{ formatFileSize(logFileSize) }}</p>
+      </div>
+      
+      <div class="status-card" :class="form.logging.enableRequestLog ? 'warning' : 'info'">
+        <div class="status-icon" :class="form.logging.enableRequestLog ? 'warning' : 'info'">
+          <el-icon><Warning /></el-icon>
+        </div>
+        <h3 class="status-title">详细日志</h3>
+        <p class="status-description">
+          <el-tag :type="form.logging.enableRequestLog ? 'warning' : 'info'" size="large">
+            {{ form.logging.enableRequestLog ? '已启用' : '已禁用' }}
+          </el-tag>
+        </p>
+      </div>
+    </div>
+
+    <!-- 配置表单区域 -->
+    <div class="config-grid">
+      <div class="config-card">
+        <div class="config-card-header">
+          <el-icon><Setting /></el-icon>
+          <div>
+            <h3 class="config-card-title">基本配置</h3>
+            <p class="config-card-description">配置日志级别、格式等基本参数</p>
+          </div>
+        </div>
+        
+        <el-form :model="form" label-width="120px" size="large" class="form-large">
+          <el-form-item label="日志级别">
+            <el-select v-model="form.logging.level" placeholder="选择日志级别" style="width: 100%">
+              <el-option label="DEBUG - 调试信息" value="debug" />
+              <el-option label="INFO - 一般信息" value="info" />
+              <el-option label="WARN - 警告信息" value="warn" />
+              <el-option label="ERROR - 错误信息" value="error" />
+            </el-select>
+          </el-form-item>
           
-          <el-form :model="form" label-width="100px" size="large">
-            <el-form-item label="详细日志">
-              <el-switch 
-                v-model="form.logging.enableRequestLog"
-                active-text="启用"
-                inactive-text="禁用"
-                size="large"
-                @change="onRequestLogChange"
-              />
-              <el-button 
-                v-if="form.logging.enableRequestLog"
-                type="text" 
-                @click="showDetails = !showDetails"
-                style="margin-left: 10px;"
-              >
-                <el-icon><View /></el-icon>
-                {{ showDetails ? '收起详情' : '查看详情' }}
-              </el-button>
-            </el-form-item>
+          <el-form-item label="日志格式">
+            <el-select v-model="form.logging.format" placeholder="选择日志格式" style="width: 100%">
+              <el-option label="JSON 格式" value="json" />
+              <el-option label="控制台格式" value="console" />
+            </el-select>
+          </el-form-item>
+          
+          <el-form-item label="输出方式">
+            <el-input 
+              v-model="outputDisplay" 
+              readonly 
+              placeholder="文件输出"
+            >
+              <template #prefix>
+                <el-icon><Document /></el-icon>
+              </template>
+            </el-input>
+          </el-form-item>
+          
+          <el-form-item label="敏感信息">
+            <el-switch 
+              v-model="form.logging.maskSensitive"
+              active-text="掩盖"
+              inactive-text="不掩盖"
+              size="large"
+            />
+          </el-form-item>
+        </el-form>
+      </div>
+      
+      <div class="config-card">
+        <div class="config-card-header">
+          <el-icon><Tools /></el-icon>
+          <div>
+            <h3 class="config-card-title">高级配置</h3>
+            <p class="config-card-description">详细日志和文件管理设置</p>
+          </div>
+        </div>
+        
+        <el-form :model="form" label-width="120px" size="large" class="form-large">
+          <el-form-item label="详细日志">
+            <el-switch 
+              v-model="form.logging.enableRequestLog"
+              active-text="启用"
+              inactive-text="禁用"
+              size="large"
+              @change="onRequestLogChange"
+            />
+            <el-button 
+              v-if="form.logging.enableRequestLog"
+              type="text" 
+              @click="showDetails = !showDetails"
+              class="ml-sm"
+            >
+              <el-icon><View /></el-icon>
+              {{ showDetails ? '收起详情' : '查看详情' }}
+            </el-button>
+          </el-form-item>
             
             <!-- 可折叠的详细信息 -->
             <el-collapse-transition>
@@ -166,46 +152,40 @@
             <!-- 日志文件管理 -->
             <div class="file-management">
               <el-form-item label="日志文件路径">
-                <el-input v-model="logFilePath" readonly size="small">
-                    <template #append>
-                      <el-button @click="openLogDirectory" size="small">
-                        <el-icon><FolderOpened /></el-icon>
-                      </el-button>
-                    </template>
-                  </el-input>
+              <el-input v-model="logFilePath" readonly size="small">
+                <template #append>
+                  <el-button @click="openLogDirectory" size="small">
+                    <el-icon><FolderOpened /></el-icon>
+                  </el-button>
+                </template>
+              </el-input>
             </el-form-item>
             <el-form-item label="日志文件大小">
               <el-input v-model="logFileSize" readonly size="small">
-                    <template #append>
-                      <el-button 
-                        @click="clearLogFile" 
-                        type="danger" 
-                        size="small"
-                        :disabled="logFileSize === '文件不存在' || logFileSize === '0 B'"
-                      >
-                        <el-icon><Delete /></el-icon>
-                      </el-button>
-                    </template>
-                  </el-input>
+                <template #append>
+                  <el-button 
+                    @click="clearLogFile" 
+                    type="danger" 
+                    size="small"
+                    :disabled="logFileSize === '文件不存在' || logFileSize === '0 B'"
+                  >
+                    <el-icon><Delete /></el-icon>
+                  </el-button>
+                </template>
+              </el-input>
             </el-form-item>
               
             </div>
           </el-form>
-        </el-card>
-      </el-col>
-    </el-row>
+        </div>
+      </div>
     
     <!-- 保存配置按钮 -->
     <div class="save-section">
-      <el-button 
-        type="primary" 
-        @click="saveConfig" 
-        :loading="loading"
-        size="large"
-      >
+      <button class="btn btn-primary" @click="saveConfig" :loading="loading">
         <el-icon><Check /></el-icon>
         保存配置
-      </el-button>
+      </button>
     </div>
   </div>
 </template>
@@ -356,242 +336,115 @@ async function clearLogFile() {
 </script>
 
 <style scoped>
-.logging-config {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+/* 页面布局增强 */
+.page-layout {
+  padding: var(--spacing-lg);
+  background: var(--background-page);
+  min-height: 100vh;
 }
 
-/* 状态卡片样式 */
+/* 状态卡片样式增强 */
 .status-row {
-  margin-bottom: 30px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .status-card {
-  border: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
+  transition: transform var(--transition-normal);
 }
 
 .status-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-4px);
 }
 
-.status-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.status-icon {
-  font-size: 32px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-}
-
-.status-icon.success {
-  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+/* 调试级别特殊样式 */
+.status-icon.debug {
+  background: var(--gradient-info);
   color: white;
 }
 
-.status-icon.debug {
-  background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-  color: #666;
-}
-
-.status-icon.warning {
-  background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-  color: #e6a23c;
-}
-
+/* 危险级别特殊样式 */
 .status-icon.danger {
-  background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
-  color: #f56c6c;
+  background: var(--gradient-error);
+  color: white;
 }
 
-.status-info {
-  flex: 1;
-}
-
-.status-title {
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 5px;
-}
-
-.status-value {
-  font-size: 16px;
-  font-weight: bold;
-  color: #333;
-}
-
-/* 配置卡片样式 */
-.config-card {
-  border: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
-  transition: all 0.3s ease;
-}
-
-.config-card:hover {
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: bold;
-  font-size: 16px;
-  color: #333;
-}
-
-.card-header .el-icon {
-  font-size: 20px;
-  color: #409EFF;
-}
-
-.header-actions {
-  margin-left: auto;
+/* 配置网格布局 */
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: var(--card-gap);
+  margin-bottom: var(--spacing-xl);
 }
 
 /* 详细信息样式 */
 .details-alert {
-  margin-top: 15px;
+  margin-top: var(--spacing-md);
 }
 
 .details-content {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 .details-content ul {
-  margin: 10px 0;
-  padding-left: 20px;
+  margin: var(--spacing-sm) 0;
+  padding-left: var(--spacing-lg);
 }
 
 .details-content li {
-  margin-bottom: 5px;
+  margin-bottom: var(--spacing-xs);
 }
 
 .warning-text {
-  color: #e6a23c;
-  font-weight: bold;
-  margin-top: 10px;
+  color: var(--warning-color);
+  font-weight: var(--font-weight-bold);
+  margin-top: var(--spacing-sm);
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: var(--spacing-xs);
 }
 
 /* 文件管理样式 */
 .file-management {
-  margin-top: 15px;
+  margin-top: var(--spacing-md);
 }
 
-.file-management h4 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 14px;
+/* 表单样式增强 */
+.form-large {
+  margin-top: var(--spacing-md);
 }
 
-/* 帮助文本样式 */
-.help-text {
-  margin-top: 8px;
-  font-size: 14px;
+.form-large .el-form-item {
+  margin-bottom: var(--spacing-lg);
 }
 
-.help-text .el-alert {
-  margin-bottom: 0;
+/* 按钮样式统一 */
+.ml-sm {
+  margin-left: var(--spacing-sm);
 }
 
-
-/* 保存按钮样式 */
-.save-section {
-  text-align: center;
-  margin-top: 30px;
-  padding-top: 20px;
-  border-top: 1px solid #eee;
-}
-
-.save-section .el-button {
-  min-width: 120px;
-  height: 40px;
-  font-size: 16px;
-  font-weight: bold;
+.mt-sm {
+  margin-top: var(--spacing-sm);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .logging-config {
-    padding: 10px;
+  .page-layout {
+    padding: var(--spacing-md);
   }
   
-  .status-row .el-col {
-    margin-bottom: 15px;
+  .config-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-layout {
+    padding: var(--spacing-sm);
   }
   
-  .config-card {
-    margin-bottom: 15px;
+  .status-row {
+    grid-template-columns: 1fr;
   }
-  
-  .status-item {
-    flex-direction: column;
-    text-align: center;
-    gap: 10px;
-  }
-  
-  .status-icon {
-    width: 50px;
-    height: 50px;
-    font-size: 24px;
-  }
-}
-
-/* 动画效果 */
-.el-card {
-  transition: all 0.3s ease;
-}
-
-.el-card:hover {
-  transform: translateY(-2px);
-}
-
-.el-tag {
-  font-weight: 500;
-}
-
-.el-button-group .el-button {
-  margin-left: 0;
-}
-
-.el-button-group .el-button:not(:first-child) {
-  margin-left: -1px;
-}
-
-/* 图标颜色 */
-.el-icon {
-  transition: color 0.3s ease;
-}
-
-.status-icon.success {
-  color: #67c23a;
-}
-
-.status-icon.debug {
-  color: #909399;
-}
-
-.status-icon.warning {
-  color: #e6a23c;
-}
-
-.status-icon.danger {
-  color: #f56c6c;
 }
 </style>
