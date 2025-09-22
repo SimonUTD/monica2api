@@ -615,6 +615,63 @@ func (a *WailsApp) GetLogFilePath() string {
 	return logPath
 }
 
+// GetLogFileSize 获取日志文件大小
+func (a *WailsApp) GetLogFileSize() string {
+	logPath := a.GetLogFilePath()
+	
+	// 检查文件是否存在
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		return "文件不存在"
+	}
+	
+	// 获取文件信息
+	fileInfo, err := os.Stat(logPath)
+	if err != nil {
+		return fmt.Sprintf("获取文件大小失败: %v", err)
+	}
+	
+	// 转换为人类可读格式
+	size := fileInfo.Size()
+	return formatFileSize(size)
+}
+
+// ClearLogFile 清空日志文件内容
+func (a *WailsApp) ClearLogFile() error {
+	logPath := a.GetLogFilePath()
+	
+	// 检查文件是否存在
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		return fmt.Errorf("日志文件不存在")
+	}
+	
+	// 清空文件内容（截断文件）
+	err := os.WriteFile(logPath, []byte{}, 0644)
+	if err != nil {
+		return fmt.Errorf("清空日志文件失败: %v", err)
+	}
+	
+	return nil
+}
+
+// formatFileSize 格式化文件大小为人类可读格式
+func formatFileSize(size int64) string {
+	if size == 0 {
+		return "0 B"
+	}
+	
+	units := []string{"B", "KB", "MB", "GB", "TB"}
+	unitIndex := 0
+	floatSize := float64(size)
+	
+	for floatSize >= 1024 && unitIndex < len(units)-1 {
+		floatSize /= 1024
+		unitIndex++
+	}
+	
+	// 保留2位小数
+	return fmt.Sprintf("%.2f %s", floatSize, units[unitIndex])
+}
+
 // newWailsBackendApp 创建Wails后端应用实例
 func newWailsBackendApp(cfg *config.Config) *WailsBackendApp {
 	// 初始化HTTP客户端

@@ -34,8 +34,24 @@
           </el-select>
         </el-form-item>
         
-        <el-form-item label="启用请求日志">
+        <el-form-item label="详细日志">
           <el-switch v-model="form.logging.enableRequestLog" />
+          <div class="help-text">
+            <el-alert type="warning" :closable="false" show-icon>
+              <template #title>
+                注意：启用详细请求日志会产生大量日志数据
+              </template>
+              <div>
+                详细请求日志会记录所有HTTP请求和响应的完整内容，包括：<br>
+                • 外部工具调用本软件的请求详情（环节1）<br>
+                • 本软件请求Monica API的详情（环节2）<br>
+                • Monica返回本软件的响应详情（环节3）<br>
+                • 本软件返回外部工具的响应详情（环节4）<br>
+                <br>
+                <strong>建议仅在调试问题时启用，日常使用请保持禁用状态。</strong>
+              </div>
+            </el-alert>
+          </div>
         </el-form-item>
         
         <el-form-item label="掩盖敏感信息">
@@ -56,6 +72,16 @@
                     <el-button @click="openLogDirectory">
                       <el-icon><FolderOpened /></el-icon>
                       打开目录
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-descriptions-item>
+              <el-descriptions-item label="日志文件大小">
+                <el-input v-model="logFileSize" readonly>
+                  <template #append>
+                    <el-button @click="clearLogFile" type="danger" :disabled="logFileSize === '文件不存在' || logFileSize === '0 B'">
+                      <el-icon><Delete /></el-icon>
+                      清空日志
                     </el-button>
                   </template>
                 </el-input>
@@ -99,31 +125,40 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import {UpdateConfig,GetConfig,OpenLogDirectory,GetLogFilePath} from '../../wailsjs/wailsjs/go/main/WailsApp.js'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Check, FolderOpened, Delete } from '@element-plus/icons-vue'
+import {UpdateConfig,GetConfig,OpenLogDirectory,GetLogFilePath,GetLogFileSize,ClearLogFile} from '../../wailsjs/wailsjs/go/main/WailsApp.js'
 const form = reactive({
   logging: {
     level: 'info',
     format: 'json',
     output: 'file',
-    enableRequestLog: true,
+    enableRequestLog: false, // 默认禁用详细请求日志，防止日志爆炸
     maskSensitive: true
   }
 })
 
 const logFilePath = ref('~/.monica-proxy/logs/monica-proxy.log')
+const logFileSize = ref('计算中...')
 const loading = ref(false)
 
 onMounted(async () => {
   await loadConfig()
-  // 获取实际的日志文件路径
+  // 获取实际的日志文件路径和大小
+  await updateLogFileInfo()
+})
+
+async function updateLogFileInfo() {
   try {
     const actualPath = await GetLogFilePath()
     logFilePath.value = actualPath
+    
+    const size = await GetLogFileSize()
+    logFileSize.value = size
   } catch (error) {
-    console.log('获取日志路径失败:', error)
+    console.log('获取日志文件信息失败:', error)
   }
-})
+}
 
 async function loadConfig() {
   try {
@@ -174,6 +209,32 @@ async function openLogDirectory() {
     ElMessage.error('打开目录失败: ' + errorMsg)
   }
 }
+
+async function clearLogFile() {
+  try {
+    await ElMessageBox.confirm(
+      '确定要清空日志文件内容吗？此操作不可恢复，所有日志记录将被永久删除。',
+      '确认清空日志',
+      {
+        confirmButtonText: '确定清空',
+        cancelButtonText: '取消',
+        type: 'warning',
+        dangerouslyUseHTMLString: true,
+      }
+    )
+    
+    await ClearLogFile()
+    await updateLogFileInfo() // 更新文件大小显示
+    ElMessage.success('日志文件已清空')
+  } catch (error) {
+    if (error === 'cancel') {
+      // 用户取消操作，不显示错误
+      return
+    }
+    const errorMsg = error?.message || error?.toString() || '未知错误'
+    ElMessage.error('清空日志文件失败: ' + errorMsg)
+  }
+}
 </script>
 
 <style scoped>
@@ -188,6 +249,19 @@ async function openLogDirectory() {
   align-items: center;
   font-weight: bold;
   font-size: 18px;
+}
+
+.help-text {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.help-text .el-alert {
+  margin-bottom: 0;
+}
+
+.help-text .el-alert div {
+  line-height: 1.6;
 }
 
 .save-section {

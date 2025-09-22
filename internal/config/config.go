@@ -146,7 +146,7 @@ func GetDefaultConfig() *Config {
 			Level:            "info",
 			Format:           "json",
 			Output:           "file", // 将在运行时替换为实际路径
-			EnableRequestLog: true,
+			EnableRequestLog: false, // 默认禁用详细请求日志，防止日志爆炸
 			MaskSensitive:    true,
 		},
 		Proxy: ProxyConfig{
@@ -276,6 +276,11 @@ func overrideWithEnv(config *Config) {
 	}
 	if output := os.Getenv("LOG_OUTPUT"); output != "" {
 		config.Logging.Output = output
+	}
+	if enableRequestLog := os.Getenv("ENABLE_REQUEST_LOG"); enableRequestLog != "" {
+		if enabled, err := strconv.ParseBool(enableRequestLog); err == nil {
+			config.Logging.EnableRequestLog = enabled
+		}
 	}
 	
 	// 代理配置
