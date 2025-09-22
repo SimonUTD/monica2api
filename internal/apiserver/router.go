@@ -97,8 +97,8 @@ func createChatCompletionHandler(chatService service.ChatService, customBotServi
 			c.Response().Header().Set("Transfer-Encoding", "chunked")
 			c.Response().WriteHeader(http.StatusOK)
 
-			// 流式处理响应
-			if err := monica.StreamMonicaSSEToClient(req.Model, c.Response().Writer, rawBody); err != nil {
+			// 流式处理响应（带配置参数）
+			if err := monica.StreamMonicaSSEToClientWithConfig(req.Model, c.Response().Writer, rawBody, cfg); err != nil {
 				return errors.NewInternalError(err)
 			}
 			return nil
@@ -194,8 +194,8 @@ func createCustomBotHandler(service service.CustomBotService, cfg *config.Config
 			}
 			defer stream.Close()
 
-			// 转换并写入响应
-			err := monica.StreamMonicaSSEToClient(req.Model, c.Response().Writer, stream)
+			// 转换并写入响应（带配置参数）
+			err := monica.StreamMonicaSSEToClientWithConfig(req.Model, c.Response().Writer, stream, cfg)
 			if err != nil {
 				logger.Error("流式响应写入失败", zap.Error(err))
 				return err

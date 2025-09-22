@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -42,8 +44,21 @@ func NewFileService(cfg *config.Config) FileService {
 
 // UploadFile 上传文件
 func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.FileHeader, purpose string) (*types.FileObject, error) {
+	startTime := time.Now()
+	requestID := fmt.Sprintf("upload-%d", startTime.UnixNano())
+
 	// 验证文件大小
 	if fileHeader.Size > types.MaxFileSize {
+		if s.config.Logging.EnableRequestLog {
+			logger.Error("文件大小验证失败",
+				zap.String("request_id", requestID),
+				zap.String("operation", "file_upload"),
+				zap.String("filename", fileHeader.Filename),
+				zap.Int64("file_size", fileHeader.Size),
+				zap.Int64("max_size", types.MaxFileSize),
+				zap.Duration("duration", time.Since(startTime)),
+			)
+		}
 		return nil, errors.NewBadRequestError(
 			fmt.Sprintf("文件大小超出限制: %d bytes > %d bytes", fileHeader.Size, types.MaxFileSize),
 			nil,
@@ -53,7 +68,15 @@ func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.File
 	// 打开文件
 	file, err := fileHeader.Open()
 	if err != nil {
-		logger.Error("无法打开上传的文件", zap.Error(err))
+		if s.config.Logging.EnableRequestLog {
+			logger.Error("无法打开上传的文件",
+				zap.String("request_id", requestID),
+				zap.String("operation", "file_upload"),
+				zap.String("filename", fileHeader.Filename),
+				zap.Error(err),
+				zap.Duration("duration", time.Since(startTime)),
+			)
+		}
 		return nil, errors.NewInternalError(err)
 	}
 	defer file.Close()
@@ -61,7 +84,15 @@ func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.File
 	// 读取文件内容
 	fileData, err := io.ReadAll(file)
 	if err != nil {
-		logger.Error("无法读取文件内容", zap.Error(err))
+		if s.config.Logging.EnableRequestLog {
+			logger.Error("无法读取文件内容",
+				zap.String("request_id", requestID),
+				zap.String("operation", "file_upload"),
+				zap.String("filename", fileHeader.Filename),
+				zap.Error(err),
+				zap.Duration("duration", time.Since(startTime)),
+			)
+		}
 		return nil, errors.NewInternalError(err)
 	}
 
@@ -73,12 +104,17 @@ func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.File
 		mimeType = getMimeTypeFromExtension(ext)
 	}
 
-	logger.Info("开始上传文件",
-		zap.String("filename", fileHeader.Filename),
-		zap.String("mime_type", mimeType),
-		zap.Int64("size", fileHeader.Size),
-		zap.String("purpose", purpose),
-	)
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("开始上传文件",
+			zap.String("request_id", requestID),
+			zap.String("operation", "file_upload"),
+			zap.String("filename", fileHeader.Filename),
+			zap.String("mime_type", mimeType),
+			zap.Int64("size", fileHeader.Size),
+			zap.String("purpose", purpose),
+			zap.String("file_hash", hashFileData(fileData)),
+		)
+	}
 
 	// 创建上传请求
 	uploadReq := &types.UniversalFileUploadRequest{
@@ -91,11 +127,20 @@ func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.File
 
 	// 上传文件到Monica
 	fileInfo, err := types.UploadUniversalFile(ctx, s.config, uploadReq)
+	
+	duration := time.Since(startTime)
+	
 	if err != nil {
-		logger.Error("上传文件到Monica失败",
-			zap.String("filename", fileHeader.Filename),
-			zap.Error(err),
-		)
+		if s.config.Logging.EnableRequestLog {
+			logger.Error("上传文件到Monica失败",
+				zap.String("request_id", requestID),
+				zap.String("operation", "file_upload"),
+				zap.String("filename", fileHeader.Filename),
+				zap.String("file_uid", uploadReq.FileName),
+				zap.Error(err),
+				zap.Duration("duration", duration),
+			)
+		}
 		return nil, errors.NewInternalError(err)
 	}
 
@@ -109,44 +154,122 @@ func (s *fileService) UploadFile(ctx context.Context, fileHeader *multipart.File
 		Purpose:   purpose,
 		Status:    "processed",
 		StatusDetails: map[string]interface{}{
-			"tokens": fileInfo.FileTokens,
-			"chunks": fileInfo.FileChunks,
+			"tokens":        fileInfo.FileTokens,
+			"chunks":        fileInfo.FileChunks,
+			"upload_duration": duration.String(),
 		},
 	}
 
-	logger.Info("文件上传成功",
-		zap.String("file_id", fileObject.ID),
-		zap.String("filename", fileObject.Filename),
-		zap.Int64("tokens", fileInfo.FileTokens),
-		zap.Int64("chunks", fileInfo.FileChunks),
-	)
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("文件上传成功",
+			zap.String("request_id", requestID),
+			zap.String("operation", "file_upload"),
+			zap.String("file_id", fileObject.ID),
+			zap.String("filename", fileObject.Filename),
+			zap.String("purpose", purpose),
+			zap.Int64("tokens", fileInfo.FileTokens),
+			zap.Int64("chunks", fileInfo.FileChunks),
+			zap.Duration("duration", duration),
+			zap.Any("status_details", fileObject.StatusDetails),
+		)
+	}
 
 	return fileObject, nil
 }
 
 // GetFile 获取文件信息
 func (s *fileService) GetFile(ctx context.Context, fileID string) (*types.FileObject, error) {
+	startTime := time.Now()
+	requestID := fmt.Sprintf("getfile-%d", startTime.UnixNano())
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("获取文件信息请求",
+			zap.String("request_id", requestID),
+			zap.String("operation", "get_file"),
+			zap.String("file_id", fileID),
+		)
+	}
+
 	// TODO: 实现从Monica获取文件信息的逻辑
 	// 目前返回一个基本的文件对象
-	return &types.FileObject{
+	fileObject := &types.FileObject{
 		ID:     fileID,
 		Object: "file",
 		Status: "processed",
-	}, nil
+	}
+
+	duration := time.Since(startTime)
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("获取文件信息完成",
+			zap.String("request_id", requestID),
+			zap.String("operation", "get_file"),
+			zap.String("file_id", fileID),
+			zap.Duration("duration", duration),
+			zap.Any("file_object", fileObject),
+		)
+	}
+
+	return fileObject, nil
 }
 
 // ListFiles 列出文件
 func (s *fileService) ListFiles(ctx context.Context) ([]*types.FileObject, error) {
+	startTime := time.Now()
+	requestID := fmt.Sprintf("listfiles-%d", startTime.UnixNano())
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("列出文件请求",
+			zap.String("request_id", requestID),
+			zap.String("operation", "list_files"),
+		)
+	}
+
 	// TODO: 实现从Monica获取文件列表的逻辑
 	// 目前返回空列表
-	return []*types.FileObject{}, nil
+	files := []*types.FileObject{}
+
+	duration := time.Since(startTime)
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("列出文件完成",
+			zap.String("request_id", requestID),
+			zap.String("operation", "list_files"),
+			zap.Duration("duration", duration),
+			zap.Int("file_count", len(files)),
+		)
+	}
+
+	return files, nil
 }
 
 // DeleteFile 删除文件
 func (s *fileService) DeleteFile(ctx context.Context, fileID string) error {
+	startTime := time.Now()
+	requestID := fmt.Sprintf("deletefile-%d", startTime.UnixNano())
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("文件删除请求",
+			zap.String("request_id", requestID),
+			zap.String("operation", "delete_file"),
+			zap.String("file_id", fileID),
+		)
+	}
+
 	// TODO: 实现从Monica删除文件的逻辑
 	// 目前返回成功
-	logger.Info("文件删除请求", zap.String("file_id", fileID))
+	
+	duration := time.Since(startTime)
+
+	if s.config.Logging.EnableRequestLog {
+		logger.Info("文件删除完成",
+			zap.String("request_id", requestID),
+			zap.String("operation", "delete_file"),
+			zap.String("file_id", fileID),
+			zap.Duration("duration", duration),
+		)
+	}
+
 	return nil
 }
 
@@ -228,4 +351,10 @@ func getMimeTypeFromExtension(ext string) string {
 	default:
 		return "application/octet-stream"
 	}
+}
+
+// hashFileData 计算文件数据的MD5哈希值
+func hashFileData(data []byte) string {
+	hash := md5.Sum(data)
+	return hex.EncodeToString(hash[:])
 }

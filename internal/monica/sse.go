@@ -7,16 +7,19 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"sync"
-	"time"
-
+	"monica-proxy/internal/config"
+	"monica-proxy/internal/logger"
 	"monica-proxy/internal/types"
 	"monica-proxy/internal/utils"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/sashabaranov/go-openai"
+	"go.uber.org/zap"
 )
 
 const (
@@ -75,6 +78,7 @@ type processMonicaSSE struct {
 	reader *bufio.Reader
 	model  string
 	ctx    context.Context
+	cfg    *config.Config
 }
 
 // handleSSEData 处理单条SSE数据
@@ -84,10 +88,20 @@ type handleSSEData func(*SSEData) error
 func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 	var line []byte
 	var err error
+	var chunkCount int64
+	var startTime = time.Now()
+	
 	for {
 		// 检查上下文是否已取消
 		select {
 		case <-p.ctx.Done():
+			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+				logger.Info("SSE流处理被上下文取消",
+					zap.String("model", p.model),
+					zap.Int64("chunk_count", chunkCount),
+					zap.Duration("duration", time.Since(startTime)),
+				)
+			}
 			return p.ctx.Err()
 		default:
 		}
@@ -96,7 +110,23 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 		if err != nil {
 			// EOF 和 上下文取消 都是正常结束，不应视为错误
 			if err == io.EOF || errors.Is(err, context.Canceled) {
+				if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+					logger.Info("SSE流处理完成",
+						zap.String("model", p.model),
+						zap.Int64("chunk_count", chunkCount),
+						zap.Duration("duration", time.Since(startTime)),
+					)
+				}
 				return nil
+			}
+			
+			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+				logger.Error("SSE流读取错误",
+					zap.String("model", p.model),
+					zap.Int64("chunk_count", chunkCount),
+					zap.Duration("duration", time.Since(startTime)),
+					zap.Error(err),
+				)
 			}
 			return fmt.Errorf("read error: %w", err)
 		}
@@ -113,6 +143,14 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 
 		// 如果是 [DONE] 则结束
 		if bytes.Equal(jsonStr, []byte(sseFinish)) {
+			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+				logger.Info("SSE流处理完成",
+					zap.String("model", p.model),
+					zap.String("finish_reason", "normal"),
+					zap.Int64("chunk_count", chunkCount),
+					zap.Duration("duration", time.Since(startTime)),
+				)
+			}
 			return nil
 		}
 
@@ -124,7 +162,28 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 			// 立即归还对象到池中
 			*sseData = SSEData{}
 			sseDataPool.Put(sseData)
+			
+			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+				logger.Error("SSE数据解析错误",
+					zap.String("model", p.model),
+					zap.Int64("chunk_count", chunkCount),
+					zap.String("raw_data", string(jsonStr)),
+					zap.Error(err),
+				)
+			}
 			return fmt.Errorf("unmarshal error: %w", err)
+		}
+
+		// 记录chunk接收日志
+		atomic.AddInt64(&chunkCount, 1)
+		if p.cfg != nil && p.cfg.Logging.EnableRequestLog && chunkCount%10 == 1 {
+			logger.Debug("SSE数据chunk接收",
+				zap.String("model", p.model),
+				zap.Int64("chunk_number", chunkCount),
+				zap.Int("text_length", len(sseData.Text)),
+				zap.Bool("finished", sseData.Finished),
+				zap.String("agent_type", sseData.AgentStatus.Type),
+			)
 		}
 
 		// 调用处理函数
@@ -132,6 +191,14 @@ func (p *processMonicaSSE) processSSEStream(handler handleSSEData) error {
 			// 立即归还对象到池中
 			*sseData = SSEData{}
 			sseDataPool.Put(sseData)
+			
+			if p.cfg != nil && p.cfg.Logging.EnableRequestLog {
+				logger.Error("SSE数据处理错误",
+					zap.String("model", p.model),
+					zap.Int64("chunk_count", chunkCount),
+					zap.Error(err),
+				)
+			}
 			return err
 		}
 		
@@ -156,6 +223,7 @@ func CollectMonicaSSEToCompletion(model string, r io.Reader) (*openai.ChatComple
 		reader: bufio.NewReaderSize(r, bufferSize),
 		model:  model,
 		ctx:    ctx,
+		cfg:    nil, // 非流式响应不需要配置
 	}
 
 	// 处理SSE数据
@@ -202,6 +270,11 @@ func CollectMonicaSSEToCompletion(model string, r io.Reader) (*openai.ChatComple
 
 // StreamMonicaSSEToClient 将 Monica SSE 转成前端可用的流
 func StreamMonicaSSEToClient(model string, w io.Writer, r io.Reader) error {
+	return StreamMonicaSSEToClientWithConfig(model, w, r, nil)
+}
+
+// StreamMonicaSSEToClientWithConfig 将 Monica SSE 转成前端可用的流（带配置）
+func StreamMonicaSSEToClientWithConfig(model string, w io.Writer, r io.Reader, cfg *config.Config) error {
 	ctx := context.Background()
 	writer := bufio.NewWriterSize(w, bufferSize)
 	defer writer.Flush()
@@ -209,6 +282,15 @@ func StreamMonicaSSEToClient(model string, w io.Writer, r io.Reader) error {
 	chatId := utils.RandStringUsingMathRand(29)
 	now := time.Now().Unix()
 	fingerprint := utils.RandStringUsingMathRand(10)
+	var startTime = time.Now()
+	var chunkCount int64
+
+	if cfg != nil && cfg.Logging.EnableRequestLog {
+		logger.Info("开始SSE流式响应",
+			zap.String("model", model),
+			zap.String("chat_id", chatId),
+		)
+	}
 
 	// 创建一个定时刷新的 ticker
 	ticker := time.NewTicker(flushInterval)
@@ -237,10 +319,13 @@ func StreamMonicaSSEToClient(model string, w io.Writer, r io.Reader) error {
 		reader: bufio.NewReaderSize(r, bufferSize),
 		model:  model,
 		ctx:    ctx,
+		cfg:    cfg,
 	}
 
 	var thinkFlag bool
 	return processor.processSSEStream(func(sseData *SSEData) error {
+		atomic.AddInt64(&chunkCount, 1)
+		
 		var sseMsg types.ChatCompletionStreamResponse
 		switch {
 		case sseData.Finished:
@@ -341,6 +426,16 @@ func StreamMonicaSSEToClient(model string, w io.Writer, r io.Reader) error {
 
 		// 如果发现 finished=true，就可以结束
 		if sseData.Finished {
+			if cfg != nil && cfg.Logging.EnableRequestLog {
+				logger.Info("SSE流式响应完成",
+					zap.String("model", model),
+					zap.String("chat_id", chatId),
+					zap.String("finish_reason", "stream_finished"),
+					zap.Int64("chunk_count", chunkCount),
+					zap.Duration("duration", time.Since(startTime)),
+				)
+			}
+			
 			writer.WriteString(dataPrefix)
 			writer.WriteString(sseFinish)
 			writer.WriteString(lineEnd)
@@ -349,6 +444,18 @@ func StreamMonicaSSEToClient(model string, w io.Writer, r io.Reader) error {
 				f.Flush()
 			}
 			return nil
+		}
+
+		// 定期记录处理进度
+		if cfg != nil && cfg.Logging.EnableRequestLog && chunkCount%20 == 0 {
+			logger.Debug("SSE流式响应进度",
+				zap.String("model", model),
+				zap.String("chat_id", chatId),
+				zap.Int64("chunk_count", chunkCount),
+				zap.Duration("duration", time.Since(startTime)),
+				zap.Int("current_text_length", len(sseData.Text)),
+				zap.Bool("thinking_mode", thinkFlag),
+			)
 		}
 
 		sseData.AgentStatus.Type = ""
