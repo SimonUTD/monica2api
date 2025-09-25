@@ -71,9 +71,6 @@ go build -o monica-proxy-fyne main.go
 ./build-wails.sh
 
 # 方法2：手动构建
-cd frontend
-npm install
-cd ..
 wails build
 ```
 
@@ -82,13 +79,6 @@ wails build
 ```bash
 # 构建后的可执行文件
 ./build/bin/monica-proxy-wails
-```
-
-#### 开发模式运行
-
-```bash
-# 启动开发模式 (前端热重载)
-wails dev
 ```
 
 ### 测试API
