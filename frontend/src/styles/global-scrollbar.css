@@ -1,0 +1,28 @@
+/* 全局滚动条隐藏样式 */
+html, body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  /* 隐藏滚动条但保持滚动功能 */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+html::-webkit-scrollbar, body::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* 确保Wails应用主窗口不显示滚动条 */
+#wails-app, #app {
+  overflow: hidden;
+}
+
+/* 所有元素默认隐藏滚动条 */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}

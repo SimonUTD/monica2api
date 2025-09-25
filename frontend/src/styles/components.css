@@ -28,7 +28,7 @@
 }
 
 .card-header {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   border-bottom: 1px solid var(--border-light);
   background: var(--gradient-info);
 }
@@ -43,11 +43,11 @@
 }
 
 .card-body {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
 }
 
 .card-footer {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   border-top: 1px solid var(--border-light);
   background: var(--background-section);
 }
@@ -63,7 +63,7 @@
 }
 
 .form-item {
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .form-label {
@@ -133,7 +133,7 @@
 .status-card {
   background: var(--background-white);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   transition: var(--transition-normal);
   text-align: center;
@@ -146,16 +146,16 @@
 }
 
 .status-icon {
-  width: 64px;
-  height: 64px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto var(--spacing-md);
+  margin: 0 auto var(--spacing-xs);
   background: var(--gradient-info);
   color: white;
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
 }
 
 .status-icon.success {
@@ -171,23 +171,23 @@
 }
 
 .status-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: 2px;
 }
 
 .status-description {
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   color: var(--text-secondary);
-  line-height: var(--line-height-normal);
+  line-height: 1.3;
 }
 
 /* 统一配置卡片样式 */
 .config-card {
   background: var(--background-white);
   border-radius: var(--radius-lg);
-  padding: var(--spacing-lg);
+  padding: var(--spacing-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
 }
@@ -195,14 +195,14 @@
 .config-card-header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-md);
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
   border-bottom: 1px solid var(--border-light);
 }
 
 .config-card-title {
-  font-size: var(--font-size-lg);
+  font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
 }
@@ -215,14 +215,14 @@
 
 /* 统一保存区域样式 */
 .save-section {
-  margin-top: var(--spacing-xl);
-  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-lg);
+  padding-top: var(--spacing-md);
   border-top: 1px solid var(--border-light);
   text-align: center;
 }
 
 .save-section .btn {
-  margin: 0 var(--spacing-sm);
+  margin: 0 var(--spacing-xs);
 }
 
 /* 统一标签样式 */
@@ -358,13 +358,13 @@
 .divider {
   height: 1px;
   background: var(--border-light);
-  margin: var(--spacing-lg) 0;
+  margin: var(--spacing-md) 0;
 }
 
 .divider-vertical {
   width: 1px;
   background: var(--border-light);
-  margin: 0 var(--spacing-lg);
+  margin: 0 var(--spacing-md);
 }
 
 /* 统一间距工具类 */

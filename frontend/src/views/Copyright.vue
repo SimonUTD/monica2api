@@ -1,10 +1,5 @@
 <template>
-  <div class="page-layout">
-    <div class="page-header">
-      <h1 class="page-title">版权信息</h1>
-      <p class="page-subtitle">查看项目许可证、版本信息和相关链接</p>
-    </div>
-    
+  <div class="page-layout compact">
     <!-- 内容区域 -->
     <div class="content-grid">
       <!-- 许可证信息卡片 -->
@@ -212,9 +207,13 @@ function showLicenseFull() {
 <style scoped>
 /* 页面布局 */
 .page-layout {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   background: var(--background-page);
   min-height: 100vh;
+}
+
+.compact {
+  /* 紧凑模式：无顶部标题区域 */
 }
 
 /* 内容网格布局 */
@@ -424,7 +423,7 @@ function showLicenseFull() {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .page-layout {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
   }
   
   .content-grid {
@@ -451,7 +450,7 @@ function showLicenseFull() {
 
 @media (max-width: 480px) {
   .page-layout {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
   }
   
   .content-card-header {

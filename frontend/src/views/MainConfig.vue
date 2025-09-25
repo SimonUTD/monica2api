@@ -1,10 +1,5 @@
 <template>
-  <div class="page-layout">
-    <div class="page-header">
-      <h1 class="page-title">主要配置</h1>
-      <p class="page-subtitle">配置Monica连接、代理设置、安全选项等核心参数</p>
-    </div>
-    
+  <div class="page-layout compact">
     <!-- 状态卡片区域 -->
     <div class="status-row">
       <div class="status-card">
@@ -507,14 +502,18 @@ function getResultText(result) {
 <style scoped>
 /* 页面布局增强 */
 .page-layout {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   background: var(--background-page);
   min-height: 100vh;
 }
 
+.compact {
+  /* 紧凑模式：无顶部标题区域 */
+}
+
 /* 状态卡片样式增强 */
 .status-row {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .status-card {
@@ -527,26 +526,26 @@ function getResultText(result) {
 
 /* 服务控制区域样式 */
 .service-control-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .service-controls {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
 }
 
 .service-controls .button-group {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--spacing-md);
+  gap: var(--spacing-sm);
   justify-content: center;
-  padding: var(--spacing-md) 0;
+  padding: var(--spacing-sm) 0;
 }
 
 .service-controls .btn {
-  padding: var(--spacing-md) var(--spacing-lg);
-  font-size: var(--font-size-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   border-radius: var(--radius-md);
   border: none;
@@ -554,8 +553,8 @@ function getResultText(result) {
   transition: all var(--transition-fast);
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm);
-  min-width: 120px;
+  gap: var(--spacing-xs);
+  min-width: 100px;
   justify-content: center;
 }
 
@@ -607,20 +606,20 @@ function getResultText(result) {
 
 /* API端点信息区域样式 */
 .api-endpoints-section {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 /* 配置网格布局 */
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: var(--card-gap);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 /* API端点信息样式 */
 .api-info {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   background: var(--background-section);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
@@ -633,10 +632,10 @@ function getResultText(result) {
 }
 
 .api-info li {
-  padding: var(--spacing-sm) 0;
+  padding: var(--spacing-xs) 0;
   border-bottom: 1px solid var(--border-light);
   color: var(--text-regular);
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
 }
 
@@ -647,22 +646,22 @@ function getResultText(result) {
 .api-info li strong {
   color: var(--primary-color);
   font-weight: var(--font-weight-bold);
-  margin-right: var(--spacing-sm);
+  margin-right: var(--spacing-xs);
 }
 
 /* 测试结果对话框样式 */
 .test-results {
-  max-height: 70vh;
+  max-height: 60vh;
   overflow-y: auto;
 }
 
 .test-details {
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
 }
 
 .test-details pre {
   background: var(--background-section);
-  padding: var(--spacing-md);
+  padding: var(--spacing-sm);
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   overflow-x: auto;
@@ -690,7 +689,7 @@ function getResultText(result) {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .page-layout {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
   }
   
   .config-grid {
@@ -702,7 +701,7 @@ function getResultText(result) {
   }
   
   .service-controls {
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
   }
   
   .service-controls .btn {
@@ -722,7 +721,7 @@ function getResultText(result) {
 
 @media (max-width: 480px) {
   .page-layout {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
   }
   
   .status-row {

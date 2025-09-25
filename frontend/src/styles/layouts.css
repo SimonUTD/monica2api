@@ -9,13 +9,13 @@
 }
 
 .page-content {
-  padding: var(--spacing-lg);
-  min-height: calc(100vh - 60px); /* 减去header高度 */
+  padding: var(--spacing-sm);
+  min-height: calc(100vh - 40px); /* 减去header高度 */
 }
 
 /* 页面标题区域 */
 .page-header {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 .page-title {
@@ -36,15 +36,15 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--card-gap);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 /* 配置网格布局 */
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: var(--card-gap);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-lg);
 }
 
 /* 表单布局 */
@@ -55,22 +55,22 @@
 }
 
 .form-section {
-  margin-bottom: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
 }
 
 .form-section-title {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-bold);
   color: var(--text-primary);
-  margin-bottom: var(--spacing-lg);
-  padding-bottom: var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding-bottom: var(--spacing-sm);
   border-bottom: 2px solid var(--primary-color);
 }
 
 .form-section-description {
   font-size: var(--font-size-sm);
   color: var(--text-secondary);
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
   line-height: var(--line-height-normal);
 }
 
@@ -150,14 +150,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   text-align: center;
   color: var(--text-secondary);
 }
 
 .empty-icon {
-  font-size: 48px;
-  margin-bottom: var(--spacing-lg);
+  font-size: 40px;
+  margin-bottom: var(--spacing-md);
   opacity: 0.5;
 }
 
@@ -178,18 +178,18 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl);
-  min-height: 200px;
+  padding: var(--spacing-xl);
+  min-height: 150px;
 }
 
 .loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--border-light);
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border-light);
   border-top-color: var(--primary-color);
   border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
 }
 
 .loading-text {
@@ -203,14 +203,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   text-align: center;
   color: var(--error-color);
 }
 
 .error-icon {
-  font-size: 48px;
-  margin-bottom: var(--spacing-lg);
+  font-size: 40px;
+  margin-bottom: var(--spacing-md);
 }
 
 .error-title {
@@ -231,14 +231,14 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   text-align: center;
   color: var(--success-color);
 }
 
 .success-icon {
-  font-size: 48px;
-  margin-bottom: var(--spacing-lg);
+  font-size: 40px;
+  margin-bottom: var(--spacing-md);
 }
 
 .success-title {
@@ -256,8 +256,8 @@
 .page-footer {
   background: var(--background-white);
   border-top: 1px solid var(--border-light);
-  padding: var(--spacing-lg);
-  margin-top: var(--spacing-2xl);
+  padding: var(--spacing-md);
+  margin-top: var(--spacing-xl);
 }
 
 .footer-content {

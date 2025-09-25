@@ -86,10 +86,33 @@ async function getServiceStatu() {
 </script>
 
 <style>
+/* 引入全局滚动条隐藏样式 */
+@import './styles/global-scrollbar.css';
+
 /* 强制浅色主题 */
 .light-theme {
   background-color: #ffffff !important;
   color: #303133 !important;
+}
+
+/* 隐藏滚动条但保持滚动功能 - 正确方法 */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* 全局滚动条隐藏 */
+* {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 .light-theme .app-header {
@@ -117,8 +140,14 @@ async function getServiceStatu() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 var(--spacing-lg);
+  padding: 0 var(--spacing-md);
   box-shadow: var(--shadow-md);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50px;
+  z-index: var(--z-fixed);
 }
 
 .app-header-content {
@@ -169,15 +198,28 @@ async function getServiceStatu() {
   background: var(--background-section);
   border-right: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
-  width: 200px !important;
-  min-width: 200px;
-  max-width: 250px;
+  width: 180px !important;
+  min-width: 180px;
+  max-width: 220px;
+  position: fixed;
+  top: 50px;
+  left: 0;
+  bottom: 0;
+  z-index: var(--z-sticky);
 }
 
 .sidebar-menu {
   height: 100%;
   border-right: none;
   background: transparent;
+  overflow-y: auto;
+  /* 隐藏滚动条 */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.sidebar-menu::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 .sidebar-menu .el-menu-item {
@@ -209,19 +251,33 @@ async function getServiceStatu() {
   background: var(--background-page);
   padding: 0;
   overflow: hidden;
+  margin-left: 180px;
+  margin-top: 50px;
+  min-height: calc(100vh - 50px);
 }
 
 .page-content {
-  min-height: calc(100vh - 60px);
-  padding: var(--spacing-lg);
+  min-height: calc(100vh - 50px);
+  padding: var(--spacing-sm);
+  height: calc(100vh - 50px);
+  overflow-y: auto;
+  /* 平滑滚动 */
+  scroll-behavior: smooth;
+  /* 隐藏滚动条 */
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.page-content::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
-    gap: var(--spacing-md);
-    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm);
     text-align: center;
   }
   
@@ -239,9 +295,10 @@ async function getServiceStatu() {
   }
   
   .app-sidebar {
-    width: 60px !important;
-    min-width: 60px;
-    max-width: 60px;
+    width: 50px !important;
+    min-width: 50px;
+    max-width: 50px;
+    height: calc(100vh - 50px);
   }
   
   .sidebar-menu .el-menu-item span {
@@ -254,7 +311,12 @@ async function getServiceStatu() {
   }
   
   .page-content {
-    padding: var(--spacing-md);
+    padding: var(--spacing-xs);
+    height: calc(100vh - 50px);
+  }
+  
+  .app-main {
+    margin-left: 50px;
   }
 }
 </style>

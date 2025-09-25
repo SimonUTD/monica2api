@@ -1,10 +1,5 @@
 <template>
-  <div class="page-layout">
-    <div class="page-header">
-      <h1 class="page-title">日志配置</h1>
-      <p class="page-subtitle">配置日志级别、格式和输出方式</p>
-    </div>
-    
+  <div class="page-layout compact">
     <!-- 日志系统状态卡片 -->
     <div class="status-row">
       <div class="status-card">
@@ -338,14 +333,18 @@ async function clearLogFile() {
 <style scoped>
 /* 页面布局增强 */
 .page-layout {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   background: var(--background-page);
   min-height: 100vh;
 }
 
+.compact {
+  /* 紧凑模式：无顶部标题区域 */
+}
+
 /* 状态卡片样式增强 */
 .status-row {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .status-card {
@@ -430,7 +429,7 @@ async function clearLogFile() {
 /* 响应式设计 */
 @media (max-width: 768px) {
   .page-layout {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
   }
   
   .config-grid {
@@ -440,7 +439,7 @@ async function clearLogFile() {
 
 @media (max-width: 480px) {
   .page-layout {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
   }
   
   .status-row {

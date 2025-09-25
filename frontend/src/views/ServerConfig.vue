@@ -1,10 +1,5 @@
 <template>
-  <div class="page-layout">
-    <div class="page-header">
-      <h1 class="page-title">服务器配置</h1>
-      <p class="page-subtitle">配置服务器监听地址、端口和代理设置</p>
-    </div>
-    
+  <div class="page-layout compact">
     <!-- 状态卡片区域 -->
     <div class="status-row">
       <div class="status-card">
@@ -216,14 +211,18 @@ async function saveConfig() {
 <style scoped>
 /* 页面布局增强 */
 .page-layout {
-  padding: var(--spacing-lg);
+  padding: var(--spacing-sm);
   background: var(--background-page);
   min-height: 100vh;
 }
 
+.compact {
+  /* 紧凑模式：无顶部标题区域 */
+}
+
 /* 状态卡片样式增强 */
 .status-row {
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 .status-card {
@@ -237,15 +236,15 @@ async function saveConfig() {
 /* 配置网格布局 */
 .config-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
   gap: var(--card-gap);
-  margin-bottom: var(--spacing-xl);
+  margin-bottom: var(--spacing-md);
 }
 
 /* 响应式设计 */
 @media (max-width: 768px) {
   .page-layout {
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
   }
   
   .config-grid {
@@ -255,7 +254,7 @@ async function saveConfig() {
 
 @media (max-width: 480px) {
   .page-layout {
-    padding: var(--spacing-sm);
+    padding: var(--spacing-xs);
   }
   
   .status-row {
