@@ -77,8 +77,20 @@
             />
             
             <div v-if="appStore.serviceStatus.address" class="api-info">
-              <p><strong>base_url:</strong> {{ appStore.serviceStatus.address }}</p>
-              <p><strong>API Key:</strong> {{ appStore.serviceStatus.apiKey || '未设置' }}</p>
+              <div class="api-info-item">
+                <span class="api-label"><strong>base_url:</strong></span>
+                <span class="api-value">{{ appStore.serviceStatus.address }}</span>
+                <el-button class="copy-btn" size="small" @click="copyToClipboard(appStore.serviceStatus.address)" title="复制 base_url">
+                  复制
+                </el-button>
+              </div>
+              <div class="api-info-item">
+                <span class="api-label"><strong>API Key:</strong></span>
+                <span class="api-value">{{ appStore.serviceStatus.apiKey || '未设置' }}</span>
+                <el-button class="copy-btn" size="small" @click="copyToClipboard(appStore.serviceStatus.apiKey || '')" :disabled="!appStore.serviceStatus.apiKey" title="复制 API Key">
+                  复制
+                </el-button>
+              </div>
             </div>
             
             <div v-if="quotaInfo.geniusBot !== undefined" class="quota-info">
@@ -278,7 +290,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAppStore } from '@/stores/app'
-import { VideoPlay, VideoPause, Connection, Coin, Check, Link } from '@element-plus/icons-vue'
+import { VideoPlay, VideoPause, Connection, Coin, Check, Link, CopyDocument } from '@element-plus/icons-vue'
 import {GetConfig,UpdateConfig,StartService,StopService,TestConfig,GetServiceStatus,GetQuota} from '../../wailsjs/wailsjs/go/main/WailsApp.js'
 const appStore = useAppStore()
 
@@ -497,6 +509,20 @@ function getResultText(result) {
   if (result.statusCode >= 200 && result.statusCode < 300) return `成功 (HTTP ${result.statusCode})`
   return `错误 (HTTP ${result.statusCode})`
 }
+
+async function copyToClipboard(text) {
+  if (!text) {
+    ElMessage.warning('没有可复制的内容')
+    return
+  }
+  
+  try {
+    await navigator.clipboard.writeText(text)
+    ElMessage.success('已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败，请手动复制')
+  }
+}
 </script>
 
 <style scoped>
@@ -625,6 +651,43 @@ function getResultText(result) {
   border: 1px solid var(--border-light);
 }
 
+.api-info-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.api-info-item:last-child {
+  border-bottom: none;
+}
+
+.api-label {
+  min-width: 80px;
+  color: var(--text-regular);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+}
+
+.api-value {
+  flex: 1;
+  color: var(--text-regular);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-normal);
+  word-break: break-all;
+}
+
+.copy-btn {
+  min-width: auto;
+  padding: 2px 8px;
+  font-size: var(--font-size-xs);
+  height: 24px;
+  line-height: 1;
+}
+
 .api-info ul {
   list-style: none;
   padding: 0;
@@ -636,7 +699,9 @@ function getResultText(result) {
   border-bottom: 1px solid var(--border-light);
   color: var(--text-regular);
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-regular);
   line-height: var(--line-height-normal);
+  word-break: break-all;
 }
 
 .api-info li:last-child {
